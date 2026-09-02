@@ -1,0 +1,107 @@
+services:
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: rits_workbench_web
+    restart: always
+    ports:
+      - "3005:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://82.38.65.67:4000}
+      - NEXT_PUBLIC_WS_URL=${NEXT_PUBLIC_WS_URL:-http://82.38.65.67:4000}
+    depends_on:
+      - api
+    networks:
+      - rits_network
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rits_workbench_api
+    restart: always
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-rits_admin}:${POSTGRES_PASSWORD:-rits_prod_secure_pass_9843}@postgres:5432/${POSTGRES_DB:-rits_workbench}?schema=public
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - S3_ENDPOINT=minio
+      - S3_PORT=9000
+      - S3_PUBLIC_ENDPOINT=${S3_PUBLIC_ENDPOINT:-http://82.38.65.67:9010}
+      - S3_USE_SSL=false
+      - S3_ACCESS_KEY=${MINIO_ROOT_USER:-rits_minio_admin}
+      - S3_SECRET_KEY=${MINIO_ROOT_PASSWORD:-rits_minio_secure_pass_9843}
+      - S3_BUCKET_NAME=test-attachments
+      - JWT_SECRET=${JWT_SECRET:-rits_prod_super_jwt_secret_key_8471927491}
+      - JWT_EXPIRATION=7d
+      - FRONTEND_URL=${FRONTEND_URL:-http://82.38.65.67:3005}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    networks:
+      - rits_network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: rits_workbench_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-rits_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rits_prod_secure_pass_9843}
+      POSTGRES_DB: ${POSTGRES_DB:-rits_workbench}
+    volumes:
+      - rits_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-rits_admin} -d ${POSTGRES_DB:-rits_workbench}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rits_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: rits_workbench_redis
+    restart: always
+    volumes:
+      - rits_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - rits_network
+
+  minio:
+    image: minio/minio:latest
+    container_name: rits_workbench_minio
+    restart: always
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-rits_minio_admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-rits_minio_secure_pass_9843}
+    ports:
+      - "9010:9000"
+      - "9011:9001"
+    volumes:
+      - rits_minio_data:/data
+    networks:
+      - rits_network
+
+volumes:
+  rits_postgres_data:
+  rits_redis_data:
+  rits_minio_data:
+
+networks:
+  rits_network:
+    driver: bridge

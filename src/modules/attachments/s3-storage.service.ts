@@ -58,6 +58,19 @@ export class S3StorageService implements OnModuleInit {
       Bucket: this.bucketName,
       Key: key,
     });
-    return getSignedUrl(this.s3Client, command, { expiresIn: expiresInSeconds });
+    const url = await getSignedUrl(this.s3Client, command, { expiresIn: expiresInSeconds });
+    const publicEndpoint = this.configService.get<string>('S3_PUBLIC_ENDPOINT');
+    if (publicEndpoint) {
+      try {
+        const parsed = new URL(url);
+        const pub = new URL(publicEndpoint);
+        parsed.protocol = pub.protocol;
+        parsed.host = pub.host;
+        return parsed.toString();
+      } catch {
+        return url;
+      }
+    }
+    return url;
   }
 }
