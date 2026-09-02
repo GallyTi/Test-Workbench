@@ -1,0 +1,342 @@
+﻿,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,Test scenario ID,954,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,Test scenario description,UAT_954_WET_Delivery_confirmation_Rebranding_Domestic_EXT_(different_materials_from_production),,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,Test script Responsible,Vitek Tomas,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,Test cycle,UAT,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,Date completed,2/10/25 8:38,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,Test status,Passed,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,Test manager comment,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+27,,,,,,,,,,,0,27,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Step No.,Step description,Transaction code or report,User role,Executed by,Test condition description (optional),Selection screen fields,Input data value,Expected result,Generated document number,Actual result / print screen,Execution Status,Last Defect number(s),Execution date,Comment,,,,,,,,,,,,,,,,,,,,,,,,,,,
+1,"Create LOG docs - 1x DelNote (= SeS1), 1x ShipmDoc (= SeS1)
+
+SLO:
+as agreed to LOG, in case of this type of delivery, even if physically truck is delivering base material, the logistic documents in GOP are created for Retail material only, and so no rebranding step is required",SAP GOB,Logistic/ Road transportation planning,"ITC: GOP LOG consultant / Szokody Blanka
+UAT:
+CZ:
+RO:
+SK:
+SLO: Mojca Grizon",N318,"CZ - not relevant
+RO - not relevant
+SK - not relevant
+SLO - not relevant","SeS1:
+depot: domestic external (e.g. MOL Plc. Luka Koper)
+Diesel B0 / 11010572
+Qty = 12000L
+status = 2
+DN = 0198083304",LOG docs created in GOB,,,Passed,,9/30/2025 16:32,not relevant (see column G),,,,,,,,,,,,,,,,,,,,,,,,,,,
+2,Start delivery on POS on SeS 1,Posybe POS,Cashier,"ITC:
+CZ, SK, SLO: Kudlej Viliam
+RO: Stan Liviu
+
+UAT:
+CZ:
+RO: Nadasi Csaba
+SK:
+SLO: Olivo David / Vida Marijana",TankSim used,"CZ - not relevant
+RO - not relevant
+SK - not relevant
+SLO - not relevant",EvoDiesel / ID 4,Delivery monitoring started in POS,,,Passed,,9/30/2025 16:32,not relevant (see column G),,,,,,,,,,,,,,,,,,,,,,,,,,,
+3,Wet product sale on POS on SeS 1,Posybe POS,Cashier,"ITC:
+CZ, SK, SLO: Kudlej Viliam
+RO: Stan Liviu
+
+UAT:
+CZ:
+RO: Nadasi Csaba
+SK:
+SLO: Olivo David / Vida Marijana","TankSim, PumpSim used","CZ - not relevant
+RO - not relevant
+SK - not relevant
+SLO - not relevant",EvoDiesel / ID 4,Sales transactions done,,,Passed,,9/30/2025 16:32,not relevant (see column G),,,,,,,,,,,,,,,,,,,,,,,,,,,
+4,Stop delivery on POS on SeS 1,Posybe POS,Cashier,"ITC:
+CZ, SK, SLO: Kudlej Viliam
+RO: Stan Liviu
+
+UAT:
+CZ:
+RO: Nadasi Csaba
+SK:
+SLO: Olivo David / Vida Marijana",TankSim used,"CZ - not relevant
+RO - not relevant
+SK - not relevant
+SLO - not relevant","EvoDiesel / ID 4
+DN = based on step 1
+Qty = +12000L","Delivery monitoring finished in POS, correct print-outs from POS, sold Qty during delivery monitoring was aggregated correctly",,,Passed,,9/30/2025 16:32,not relevant (see column G),,,,,,,,,,,,,,,,,,,,,,,,,,,
+5,Check in SAP PO,SAP PO,RITS Support Central systems / SAP PO,"ITC: SAP PO team / Manczal Juraj, Kiraly Jan, Grznar Michal
+UAT: SAP PO team / Manczal Juraj, Kiraly Jan, Grznar Michal",,"CZ - not relevant
+RO - not relevant
+SK - not relevant
+SLO - not relevant",,Data transferred to SAP OIL,,,Passed,,9/30/2025 16:32,not relevant (see column G),,,,,,,,,,,,,,,,,,,,,,,,,,,
+6,Update the status for existing LOG doc from step 1,SAP GOB,Logistic/ Road transportation planning,"ITC: GOP LOG consultant / Szokody Blanka
+UAT:
+CZ:
+RO:
+SK:
+SLO: Mojca Grizon",,"CZ - not relevant
+RO - not relevant
+SK - not relevant
+SLO - not relevant","SeS1:
+DeliveryNote from step 1
+status change = 4",LOG doc status updated in GOB,,,Passed,,9/30/2025 16:32,not relevant (see column G),,,,,,,,,,,,,,,,,,,,,,,,,,,
+7,Open SAP Launchpad \ Wet Stock Movements App,WSM App,Station Partner,"ITC:
+CZ, RO, SK, SLO: Vitek Tomas / Olbert Matus
+
+UAT:
+CZ:
+RO: Nadasi Csaba
+SK:
+SLO: Olivo David / Vida Marijana",,"CZ - not relevant
+RO - not relevant
+SK - not relevant
+SLO - not relevant",,"SAP opened, wet stock mngmt apps available",,,Passed,,9/30/2025 16:32,not relevant (see column G),,,,,,,,,,,,,,,,,,,,,,,,,,,
+8,"Create new DelConf for SES 1:
+- check SeS
+- choose material
+- import EDN (choose from the list)
+- enter truck discharging data
+- import start/stop from tank measurements - check values to step 2 & 4
+- visual check/evaluation of data (check greenlight)
+- save",WSM App,Station Partner,"ITC:
+CZ, RO, SK, SLO: Vitek Tomas / Olbert Matus
+
+UAT:
+CZ:
+RO: Nadasi Csaba
+SK:
+SLO: Olivo David / Vida Marijana",,"CZ - not relevant
+RO - not relevant
+SK - not relevant
+SLO - not relevant","EvoDiesel / ID 11010030
+confirmed full volume from DelNote for SeS1",DelConf created,,,Passed,,9/30/2025 16:32,not relevant (see column G),,,,,,,,,,,,,,,,,,,,,,,,,,,
+9,Stock mvmts list - check saved DelConf document,WSM App,Station Partner,"ITC:
+CZ, RO, SK, SLO: Vitek Tomas / Olbert Matus
+
+UAT:
+CZ:
+RO: Nadasi Csaba
+SK:
+SLO: Olivo David / Vida Marijana",,"CZ - not relevant
+RO - not relevant
+SK - not relevant
+SLO - not relevant",EvoDiesel / ID 11010030,DelConf saved and displayed,,,Passed,,9/30/2025 16:32,not relevant (see column G),,,,,,,,,,,,,,,,,,,,,,,,,,,
+10,Stock mvmts list - check saved DelConf document,ZSSR_FM_REP1,Fuel CatMan/ Fuel Pricing,"ITC:
+CZ, RO, SK, SLO: Vitek Tomas / Olbert Matus
+
+UAT:
+CZ:
+RO: Nadasi Csaba
+SK:
+SLO: Olivo David / Vida Marijana",,"CZ - not relevant
+RO - not relevant
+SK - not relevant
+SLO - not relevant",EvoDiesel / ID 11010030,DelConf saved and displayed,,,Passed,,9/30/2025 16:33,not relevant (see column G),,,,,,,,,,,,,,,,,,,,,,,,,,,
+11,"Create LOG docs - 1x DelNote (= SeS1), 1x ShipmDoc (= SeS1)
+
+SLO:
+as agreed to LOG, in case of this type of delivery, even if physically truck is delivering base material, the logistic documents in GOP are created for Retail material only, and so no rebranding step is required",SAP GOB,Logistic/ Road transportation planning,"ITC: GOP LOG consultant / Szokody Blanka
+UAT:
+CZ:
+RO:
+SK:
+SLO: Mojca Grizon",N318,"CZ - relevant
+RO - relevant
+SK - relevant
+SLO - relevant","SeS1:
+depot: domestic external (e.g. MOL Plc. Luka Koper)
+Diesel B7 / 11010030
+Qty = 12000L
+status = 2
+DN = 0198083269",LOG docs created in GOB,,,Passed,,9/30/2025 16:33,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+12,Start delivery on POS on SeS 1,Posybe POS,Cashier,"ITC:
+CZ, SK, SLO: Kudlej Viliam
+RO: Stan Liviu
+
+UAT:
+CZ:
+RO: Nadasi Csaba
+SK:
+SLO: Olivo David / Vida Marijana",TankSim used,"CZ - relevant
+RO - relevant
+SK - relevant
+SLO - relevant",EvoDiesel / ID 4,Delivery monitoring started in POS,,,Passed,,9/30/2025 16:34,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+13,Wet product sale on POS on SeS 1,Posybe POS,Cashier,"ITC:
+CZ, SK, SLO: Kudlej Viliam
+RO: Stan Liviu
+
+UAT:
+CZ:
+RO: Nadasi Csaba
+SK:
+SLO: Olivo David / Vida Marijana","TankSim, PumpSim used","CZ - relevant
+RO - relevant
+SK - relevant
+SLO - relevant",EvoDiesel / ID 4,Sales transactions done,,,Passed,,9/30/2025 16:35,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+14,Stop delivery on POS on SeS 1,Posybe POS,Cashier,"ITC:
+CZ, SK, SLO: Kudlej Viliam
+RO: Stan Liviu
+
+UAT:
+CZ:
+RO: Nadasi Csaba
+SK:
+SLO: Olivo David / Vida Marijana",TankSim used,"CZ - relevant
+RO - relevant
+SK - relevant
+SLO - relevant","EvoDiesel / ID 4
+DN = based on step 11
+Qty = +12000L","Delivery monitoring finished in POS, correct print-outs from POS, sold Qty during delivery monitoring was aggregated correctly",,,Passed,,9/30/2025 16:35,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+15,Check in SAP PO,SAP PO,RITS Support Central systems / SAP PO,"ITC: SAP PO team / Manczal Juraj, Kiraly Jan, Grznar Michal
+UAT: SAP PO team / Manczal Juraj, Kiraly Jan, Grznar Michal",,"CZ - relevant
+RO - relevant
+SK - relevant
+SLO - relevant",,Data transferred to SAP OIL,,,Passed,,9/30/2025 16:36,if step 19 is passed that means also this step was successfull,,,,,,,,,,,,,,,,,,,,,,,,,,,
+16,Update the status for existing LOG doc from step 11,SAP GOB,Logistic/ Road transportation planning,"ITC: GOP LOG consultant / Szokody Blanka
+UAT:
+CZ:
+RO:
+SK:
+SLO: Mojca Grizon",,"CZ - relevant
+RO - relevant
+SK - relevant
+SLO - relevant","SeS1:
+DeliveryNote from step 11
+status change = 4",LOG doc status updated in GOB,,,Passed,,9/30/2025 16:31,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+17,Open SAP Launchpad \ Wet Stock Movements App,WSM App,Station Partner,"ITC:
+CZ, RO, SK, SLO: Vitek Tomas / Olbert Matus
+
+UAT:
+CZ:
+RO: Nadasi Csaba
+SK:
+SLO: Olivo David / Vida Marijana",,"CZ - relevant
+RO - relevant
+SK - relevant
+SLO - relevant",,"SAP opened, wet stock mngmt apps available",,,Passed,,9/30/2025 16:37,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+18,"Create new DelConf for SES 1:
+- check SeS
+- choose material
+- import EDN (choose from the list)
+- enter truck discharging data
+- import start/stop from tank measurements - check values to step 12 & 14
+- visual check/evaluation of data (check greenlight)
+- save",WSM App,Station Partner,"ITC:
+CZ, RO, SK, SLO: Vitek Tomas / Olbert Matus
+
+UAT:
+CZ:
+RO: Nadasi Csaba
+SK:
+SLO: Olivo David / Vida Marijana",,"CZ - relevant
+RO - relevant
+SK - relevant
+SLO - relevant","EvoDiesel / ID 11010030
+confirmed full volume from DelNote for SeS1",DelConf created,,,Passed,,9/30/2025 16:37,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+19,Stock mvmts list - check saved DelConf document,WSM App,Station Partner,"ITC:
+CZ, RO, SK, SLO: Vitek Tomas / Olbert Matus
+
+UAT:
+CZ:
+RO: Nadasi Csaba
+SK:
+SLO: Olivo David / Vida Marijana",,"CZ - relevant
+RO - relevant
+SK - relevant
+SLO - relevant",EvoDiesel / ID 11010030,DelConf saved and displayed,,,Passed,,9/30/2025 16:37,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+20,Stock mvmts list - check saved DelConf document,ZSSR_FM_REP1,Fuel CatMan/ Fuel Pricing,"ITC:
+CZ, RO, SK, SLO: Vitek Tomas / Olbert Matus
+
+UAT:
+CZ:
+RO: Nadasi Csaba
+SK:
+SLO: Olivo David / Vida Marijana",,"CZ - relevant
+RO - relevant
+SK - relevant
+SLO - relevant",EvoDiesel / ID 11010030,DelConf saved and displayed,,,Passed,,9/30/2025 16:39,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+21,"Check payment cards data /
+Check if MMFR transaction was created
+Check process indicator in SAP OIL","ZSSR_FM_DCREP / 
+S_SO5_65000678",Station Accounting,"ITC:
+CZ, RO, SK, SLO: Labanc Gergely, Olbert Matus
+
+UAT:
+CZ: Kabanova Miriam
+RO: Cotoara Maria-Diana / Pal Claudia
+SK: Kabanova Miriam
+SLO: Ferencak Anja",,"CZ - relevant
+RO - relevant
+SK - relevant
+SLO - relevant",,MMFR trx created,,,Passed,,10/1/2025 13:24,30.9.DO: mail to Saša and Mateja,,,,,,,,,,,,,,,,,,,,,,,,,,,
+22,"Delivery confirmation completing, Reconciliation with logistics data",ZO3RCMV01_FM1,Station Accounting,"ITC:
+CZ, RO, SK, SLO: Labanc Gergely, Olbert Matus
+
+UAT:
+CZ: Kabanova Miriam
+RO: Cotoara Maria-Diana / Pal Claudia
+SK: Kabanova Miriam
+SLO: Ferencak Anja",,"CZ - relevant
+RO - relevant
+SK - relevant
+SLO - relevant",,"Paired to LOG doc, DelConf paired to DelNote based on rebranding mapping table, Logistics document confirmed with ""basic"" (loaded/discharged) material",,,Passed,,10/1/2025 13:26,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+23,"IDoc check
+- iDoc type: ZSSR_CONFLOAD",ZSSR_DELIVERY_CONF,Station Accounting,"ITC:
+CZ, RO, SK, SLO: Labanc Gergely, Olbert Matus
+
+UAT:
+CZ: Kabanova Miriam
+RO: Cotoara Maria-Diana / Pal Claudia
+SK: Kabanova Miriam
+SLO: Ferencak Anja",,"CZ - relevant
+RO - relevant
+SK - relevant
+SLO - relevant",,DelConf iDoc sent to Logistics and processed,,,Passed,,10/1/2025 13:27,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+24,"Check the Shipment (Delivery) status (5 or 6)
+5 - Partially Confirmed (deliveries missing)
+6 - Completely Confirmed",O4B1,Station Accounting,"ITC:
+CZ, RO, SK, SLO: Labanc Gergely, Olbert Matus
+
+UAT:
+CZ: Kabanova Miriam
+RO: Cotoara Maria-Diana / Pal Claudia
+SK: Kabanova Miriam
+SLO: Ferencak Anja",,"CZ - relevant
+RO - relevant
+SK - relevant
+SLO - relevant",The shipment status will be changed to 5 when there is more delivery in the same shipment but not all of them is confirmed.,Shipment status checked and correct,,,Passed,,10/1/2025 13:31,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+25,"Material document check
+- movement: Goods receipt (101) / Stock transfer mvmt (301, 311, etc.)",MB51,Station Accounting,"ITC:
+CZ, RO, SK, SLO: Labanc Gergely, Olbert Matus
+
+UAT:
+CZ: Kabanova Miriam
+RO: Cotoara Maria-Diana / Pal Claudia
+SK: Kabanova Miriam
+SLO: Ferencak Anja",,"CZ - relevant
+RO - relevant
+SK - relevant
+SLO - relevant",,DelConf paired to DelNote based on rebranding mapping table,,,Passed,,10/1/2025 13:32,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+26,Prerequisite before sales posting - rebranding process to be performed by LOGISTIC - Rebranding transaction at Logistic side launched,???,Logistic/ Road transportation planning,"ITC: GOP LOG consultant / Szokody Blanka
+UAT:
+CZ:
+RO:
+SK:
+SLO: Mojca Grizon",,"CZ - not relevant
+RO - not relevant
+SK - not relevant
+SLO - not relevant",,"Delivered ""basic"" material rebranded to Retail material",,,Passed,,10/2/2025 8:38,not relevant (see column G),,,,,,,,,,,,,,,,,,,,,,,,,,,
+27,"Material document check
+- movement related to rebranding mvmt (e.g. xxx?)
+Check rebranding results – delivered Qty registerred with Retail Material / at Storage location 0010",MB51,Station Accounting,"ITC:
+CZ, RO, SK, SLO: Labanc Gergely, Olbert Matus
+
+UAT:
+CZ: Kabanova Miriam
+RO: Cotoara Maria-Diana / Pal Claudia
+SK: Kabanova Miriam
+SLO: Ferencak Anja",,"CZ - not relevant
+RO - not relevant
+SK - not relevant
+SLO - not relevant",,"Stock mvmt for Retail material at SeS plant.
+Delivered Qty registerred with Retail Material / at Storage location 0010",,,Passed,,10/2/2025 8:38,not relevant (see column G),,,,,,,,,,,,,,,,,,,,,,,,,,,

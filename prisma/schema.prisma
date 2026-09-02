@@ -1,0 +1,502 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserRole {
+  ADMIN
+  TEST_LEAD
+  TESTER
+  BUSINESS_REVIEWER
+  VIEWER
+}
+
+enum PriorityLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum TestTypeEnum {
+  SMOKE
+  REGRESSION
+  E2E
+  SANITY
+  INTEGRATION
+  MANUAL
+  CONNECTIVITY
+  PAYLOAD_VALIDATION
+}
+
+enum TestStatusEnum {
+  DRAFT
+  READY
+  DEPRECATED
+}
+
+enum RunStatusEnum {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  ABORTED
+}
+
+enum StepStatusEnum {
+  UNTESTED
+  IN_PROGRESS
+  PASSED
+  FAILED
+  BLOCKED
+  SKIPPED
+}
+
+enum BugSeverityEnum {
+  MINOR
+  MAJOR
+  CRITICAL
+  BLOCKER
+}
+
+model User {
+  id              String         @id @default(uuid()) @db.Uuid
+  email           String         @unique
+  passwordHash    String         @map("password_hash")
+  fullName        String         @map("full_name")
+  role            UserRole       @default(TESTER)
+  avatarUrl       String?        @map("avatar_url")
+  teamsUserId     String?        @map("teams_user_id")
+  isActive        Boolean        @default(true) @map("is_active")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  createdTestCases      TestCase[]             @relation("CreatedTestCases")
+  createdTestRuns       TestRun[]              @relation("CreatedTestRuns")
+  assignedCaseExecs     TestCaseExecution[]    @relation("AssignedCaseExecutions")
+  executedCaseExecs     TestCaseExecution[]    @relation("ExecutedCaseExecutions")
+  assignedStepExecs     TestStepExecution[]    @relation("AssignedStepExecutions")
+  executedStepExecs     TestStepExecution[]    @relation("ExecutedStepExecutions")
+  modifiedStepExecs     TestStepExecution[]    @relation("ModifiedStepExecutions")
+  timeLogs              ExecutionTimeLog[]
+  attachments           Attachment[]
+  comments              Comment[]
+  commentMentions       CommentMention[]
+  reportedBugs          BugReport[]            @relation("ReportedBugs")
+  assignedBugs          BugReport[]            @relation("AssignedBugs")
+  assignedStepsDirect   TestCaseStep[]         @relation("AssignedStepsDirect")
+  executedStepsDirect   TestCaseStep[]         @relation("ExecutedStepsDirect")
+  reactions             CommentReaction[]
+  notifications         Notification[]
+  importJobs            ExcelImportJob[]
+  auditLogs             AuditLog[]
+
+  @@map("users")
+}
+
+model Project {
+  id          String         @id @default(uuid()) @db.Uuid
+  key         String         @unique @db.VarChar(20) // e.g. "RITS", "HIVE2"
+  name        String         @db.VarChar(255)
+  description String?        @db.Text
+  isArchived  Boolean        @default(false) @map("is_archived")
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  epics       TestEpic[]
+  suites      TestSuite[]
+  testCases   TestCase[]
+  testRuns    TestRun[]
+  bugs        BugReport[]
+  importJobs  ExcelImportJob[]
+
+  @@map("projects")
+}
+
+model TestEpic {
+  id          String      @id @default(uuid()) @db.Uuid
+  projectId   String      @map("project_id") @db.Uuid
+  code        String      @db.VarChar(50) // e.g. "EPIC-POS-01"
+  title       String      @db.VarChar(255)
+  description String?     @db.Text
+  orderIndex  Int         @default(0) @map("order_index")
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  suites      TestSuite[]
+  testCases   TestCase[]
+
+  @@unique([projectId, code])
+  @@map("test_epics")
+}
+
+model TestSuite {
+  id            String       @id @default(uuid()) @db.Uuid
+  projectId     String       @map("project_id") @db.Uuid
+  epicId        String?      @map("epic_id") @db.Uuid
+  parentSuiteId String?      @map("parent_suite_id") @db.Uuid
+  title         String       @db.VarChar(255)
+  description   String?      @db.Text
+  orderIndex    Int          @default(0) @map("order_index")
+  createdAt     DateTime     @default(now()) @map("created_at")
+
+  project       Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  epic          TestEpic?    @relation(fields: [epicId], references: [id], onDelete: SetNull)
+  parentSuite   TestSuite?   @relation("SuiteHierarchy", fields: [parentSuiteId], references: [id], onDelete: Cascade)
+  childSuites   TestSuite[]  @relation("SuiteHierarchy")
+  testCases     TestCase[]
+
+  @@map("test_suites")
+}
+
+model TestCase {
+  id                     String         @id @default(uuid()) @db.Uuid
+  projectId              String         @map("project_id") @db.Uuid
+  suiteId                String?        @map("suite_id") @db.Uuid
+  epicId                 String?        @map("epic_id") @db.Uuid
+  code                   String         @db.VarChar(50) // e.g. "TC_WET_001"
+  title                  String         @db.VarChar(255)
+  description            String?        @db.Text
+  preconditions          String?        @db.Text
+  priority               PriorityLevel  @default(MEDIUM)
+  testType               TestTypeEnum   @default(MANUAL) @map("test_type")
+  status                 TestStatusEnum @default(READY)
+  estimatedDurationMins  Int?           @default(15) @map("estimated_duration_minutes")
+  tags                   String[]       @default([])
+  metadata               Json           @default("{}")
+  createdById            String?        @map("created_by") @db.Uuid
+  createdAt              DateTime       @default(now()) @map("created_at")
+  updatedAt              DateTime       @updatedAt @map("updated_at")
+
+  project                Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  suite                  TestSuite?     @relation(fields: [suiteId], references: [id], onDelete: SetNull)
+  epic                   TestEpic?      @relation(fields: [epicId], references: [id], onDelete: SetNull)
+  createdBy              User?          @relation("CreatedTestCases", fields: [createdById], references: [id], onDelete: SetNull)
+  steps                  TestCaseStep[]
+  executions             TestCaseExecution[]
+  graphLinks             TestCaseGraphLink[]
+  outgoingLinks          TestCaseRelationship[] @relation("SourceCaseLinks")
+  incomingLinks          TestCaseRelationship[] @relation("TargetCaseLinks")
+
+  @@unique([projectId, code])
+  @@index([projectId])
+  @@map("test_cases")
+}
+
+model TestCaseStep {
+  id             String         @id @default(uuid()) @db.Uuid
+  testCaseId     String         @map("test_case_id") @db.Uuid
+  stepNumber     Int            @map("step_number")
+  action         String         @db.Text
+  expectedResult String         @map("expected_result") @db.Text
+  testData       String?        @map("test_data") @db.Text
+  status         StepStatusEnum @default(UNTESTED)
+  actualResult   String?        @map("actual_result") @db.Text
+  assignedToId   String?        @map("assigned_to_id") @db.Uuid
+  executedById   String?        @map("executed_by_id") @db.Uuid
+  durationSecs   Int            @default(0) @map("duration_seconds")
+  updatedAt      DateTime?      @updatedAt @map("updated_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
+
+  testCase       TestCase       @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  assignedTo     User?          @relation("AssignedStepsDirect", fields: [assignedToId], references: [id], onDelete: SetNull)
+  executedBy     User?          @relation("ExecutedStepsDirect", fields: [executedById], references: [id], onDelete: SetNull)
+  executions     TestStepExecution[]
+
+  @@unique([testCaseId, stepNumber])
+  @@index([testCaseId])
+  @@map("test_case_steps")
+}
+
+model TestCaseRelationship {
+  id           String   @id @default(uuid()) @db.Uuid
+  sourceCaseId String   @map("source_case_id") @db.Uuid
+  targetCaseId String   @map("target_case_id") @db.Uuid
+  linkType     String   @default("RELATED") @map("link_type") @db.VarChar(50) // 'DEPENDS_ON', 'BLOCKS', 'RELATED', 'FOLLOWS'
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  sourceCase   TestCase @relation("SourceCaseLinks", fields: [sourceCaseId], references: [id], onDelete: Cascade)
+  targetCase   TestCase @relation("TargetCaseLinks", fields: [targetCaseId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceCaseId, targetCaseId, linkType])
+  @@map("test_case_relationships")
+}
+
+model TestRun {
+  id           String              @id @default(uuid()) @db.Uuid
+  projectId    String              @map("project_id") @db.Uuid
+  title        String              @db.VarChar(255) // e.g. "Release 2.4 - Smoke Test Matrix"
+  environment  String              @db.VarChar(50) // "DEV", "STAGING", "PROD"
+  status       RunStatusEnum       @default(PLANNED)
+  plannedStart DateTime?           @map("planned_start")
+  startedAt    DateTime?           @map("started_at")
+  completedAt  DateTime?           @map("completed_at")
+  createdById  String?             @map("created_by") @db.Uuid
+  createdAt    DateTime            @default(now()) @map("created_at")
+
+  project      Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy    User?               @relation("CreatedTestRuns", fields: [createdById], references: [id], onDelete: SetNull)
+  executions   TestCaseExecution[]
+
+  @@map("test_runs")
+}
+
+model TestCaseExecution {
+  id           String              @id @default(uuid()) @db.Uuid
+  testRunId    String              @map("test_run_id") @db.Uuid
+  testCaseId   String              @map("test_case_id") @db.Uuid
+  assignedToId String?             @map("assigned_to") @db.Uuid
+  status       StepStatusEnum      @default(UNTESTED)
+  durationSecs Int                 @default(0) @map("duration_seconds")
+  startedAt    DateTime?           @map("started_at")
+  completedAt  DateTime?           @map("completed_at")
+  executedById String?             @map("executed_by") @db.Uuid
+
+  testRun      TestRun             @relation(fields: [testRunId], references: [id], onDelete: Cascade)
+  testCase     TestCase            @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  assignedTo   User?               @relation("AssignedCaseExecutions", fields: [assignedToId], references: [id], onDelete: SetNull)
+  executedBy   User?               @relation("ExecutedCaseExecutions", fields: [executedById], references: [id], onDelete: SetNull)
+  stepExecs    TestStepExecution[]
+
+  @@unique([testRunId, testCaseId])
+  @@map("test_case_executions")
+}
+
+model TestStepExecution {
+  id                   String              @id @default(uuid()) @db.Uuid
+  testCaseExecutionId  String              @map("test_case_execution_id") @db.Uuid
+  testCaseStepId       String              @map("test_case_step_id") @db.Uuid
+  status               StepStatusEnum      @default(UNTESTED)
+  actualResult         String?             @map("actual_result") @db.Text
+  assignedToId         String?             @map("assigned_to") @db.Uuid
+  durationSecs         Int                 @default(0) @map("duration_seconds")
+  startedAt            DateTime?           @map("started_at")
+  completedAt          DateTime?           @map("completed_at")
+  executedById         String?             @map("executed_by") @db.Uuid
+  lastModifiedById     String?             @map("last_modified_by") @db.Uuid
+  updatedAt            DateTime            @default(now()) @updatedAt @map("updated_at")
+
+  testCaseExecution    TestCaseExecution   @relation(fields: [testCaseExecutionId], references: [id], onDelete: Cascade)
+  testCaseStep         TestCaseStep        @relation(fields: [testCaseStepId], references: [id], onDelete: Cascade)
+  assignedTo           User?               @relation("AssignedStepExecutions", fields: [assignedToId], references: [id], onDelete: SetNull)
+  executedBy           User?               @relation("ExecutedStepExecutions", fields: [executedById], references: [id], onDelete: SetNull)
+  lastModifiedBy       User?               @relation("ModifiedStepExecutions", fields: [lastModifiedById], references: [id], onDelete: SetNull)
+  timeLogs             ExecutionTimeLog[]
+  bugs                 BugReport[]
+
+  @@unique([testCaseExecutionId, testCaseStepId])
+  @@index([testCaseExecutionId])
+  @@index([assignedToId])
+  @@map("test_step_executions")
+}
+
+model ExecutionTimeLog {
+  id              String            @id @default(uuid()) @db.Uuid
+  stepExecutionId String            @map("step_execution_id") @db.Uuid
+  userId          String            @map("user_id") @db.Uuid
+  startedAt       DateTime          @default(now()) @map("started_at")
+  endedAt         DateTime?         @map("ended_at")
+  durationSecs    Int?              @map("duration_seconds")
+  isIdle          Boolean           @default(false) @map("is_idle")
+  createdAt       DateTime          @default(now()) @map("created_at")
+
+  stepExecution   TestStepExecution @relation(fields: [stepExecutionId], references: [id], onDelete: Cascade)
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("execution_time_logs")
+}
+
+model Attachment {
+  id            String    @id @default(uuid()) @db.Uuid
+  targetType    String    @map("target_type") @db.VarChar(50) // 'STEP_EXECUTION', 'TEST_CASE', 'BUG'
+  targetId      String    @map("target_id") @db.Uuid
+  fileName      String    @map("file_name") @db.VarChar(255)
+  fileSizeBytes BigInt    @map("file_size_bytes")
+  mimeType      String    @map("mime_type") @db.VarChar(100)
+  storageKey    String    @map("storage_key") @db.Text
+  uploadedById  String    @map("uploaded_by") @db.Uuid
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  uploadedBy    User      @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  @@index([targetType, targetId])
+  @@map("attachments")
+}
+
+model Comment {
+  id         String           @id @default(uuid()) @db.Uuid
+  targetType String           @map("target_type") @db.VarChar(50) // 'STEP_EXECUTION', 'TEST_CASE', 'BUG'
+  targetId   String           @map("target_id") @db.Uuid
+  authorId   String           @map("author_id") @db.Uuid
+  content    String           @db.Text
+  createdAt  DateTime         @default(now()) @map("created_at")
+  updatedAt  DateTime         @updatedAt @map("updated_at")
+
+  author     User             @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  mentions   CommentMention[]
+  reactions  CommentReaction[]
+
+  @@index([targetType, targetId])
+  @@map("comments")
+}
+
+model CommentReaction {
+  id        String   @id @default(uuid()) @db.Uuid
+  commentId String   @map("comment_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  emoji     String   @db.VarChar(16) // e.g. "👍", "❤️", "🚀", "🔥", "👀", "🐛", "✅", "🎉"
+  createdAt DateTime @default(now()) @map("created_at")
+
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId, emoji])
+  @@index([commentId])
+  @@map("comment_reactions")
+}
+
+model CommentMention {
+  id              String   @id @default(uuid()) @db.Uuid
+  commentId       String   @map("comment_id") @db.Uuid
+  mentionedUserId String   @map("mentioned_user_id") @db.Uuid
+  isNotified      Boolean  @default(false) @map("is_notified")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  comment         Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  mentionedUser   User     @relation(fields: [mentionedUserId], references: [id], onDelete: Cascade)
+
+  @@map("comment_mentions")
+}
+
+model BugReport {
+  id                String            @id @default(uuid()) @db.Uuid
+  projectId         String            @map("project_id") @db.Uuid
+  stepExecutionId   String?           @map("step_execution_id") @db.Uuid
+  code              String            @db.VarChar(50) // "BUG-0042"
+  title             String            @db.VarChar(255)
+  description       String            @db.Text
+  severity          BugSeverityEnum   @default(MAJOR)
+  status            String            @default("OPEN") @db.VarChar(50)
+  assignedToId      String?           @map("assigned_to") @db.Uuid
+  reportedById      String            @map("reported_by") @db.Uuid
+  externalTicketUrl String?           @map("external_ticket_url") @db.Text
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+
+  project           Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  stepExecution     TestStepExecution? @relation(fields: [stepExecutionId], references: [id], onDelete: SetNull)
+  assignedTo        User?             @relation("AssignedBugs", fields: [assignedToId], references: [id], onDelete: SetNull)
+  reportedBy        User              @relation("ReportedBugs", fields: [reportedById], references: [id], onDelete: Cascade)
+
+  @@map("bug_reports")
+}
+
+model Notification {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  type         String   @db.VarChar(50) // 'STEP_ASSIGNED', 'MENTION', 'STEP_FAILED', 'DAILY_DIGEST'
+  title        String   @db.VarChar(255)
+  message      String   @db.Text
+  actionUrl    String?  @map("action_url") @db.Text
+  isRead       Boolean  @default(false) @map("is_read")
+  sentToEmail  Boolean  @default(false) @map("sent_to_email")
+  sentToTeams  Boolean  @default(false) @map("sent_to_teams")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+model ExcelImportJob {
+  id            String   @id @default(uuid()) @db.Uuid
+  projectId     String   @map("project_id") @db.Uuid
+  fileName      String   @map("file_name") @db.VarChar(255)
+  storageKey    String   @map("storage_key") @db.Text
+  status        String   @default("PENDING") @db.VarChar(50) // 'PENDING', 'PARSED', 'MAPPED', 'COMPLETED', 'FAILED'
+  sheetName     String?  @map("sheet_name") @db.VarChar(100)
+  columnMapping Json     @default("{}") @map("column_mapping")
+  previewData   Json     @default("[]") @map("preview_data")
+  stats         Json     @default("{}")
+  uploadedById  String   @map("uploaded_by") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploadedBy    User     @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  @@map("excel_import_jobs")
+}
+
+model AuditLog {
+  id            String   @id @default(uuid()) @db.Uuid
+  entityName    String   @map("entity_name") @db.VarChar(50)
+  entityId      String   @map("entity_id") @db.Uuid
+  userId        String?  @map("user_id") @db.Uuid
+  action        String   @db.VarChar(20) // 'INSERT', 'UPDATE', 'DELETE', 'STATUS_CHANGE'
+  previousState Json?    @map("previous_state")
+  newState      Json?    @map("new_state")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([entityName, entityId])
+  @@map("audit_logs")
+}
+
+// -------------------------------------------------------------
+// RITS Architecture Graph Workbench Models
+// -------------------------------------------------------------
+
+model GraphObject {
+  id            String   @id @default(uuid()) @db.Uuid
+  objectId      String   @unique @map("object_id") @db.VarChar(100) // SYS_DOMS, IF_RITS_009
+  objectType    String   @map("object_type") @db.VarChar(50) // system, interface, process, payload
+  name          String   @db.VarChar(255)
+  displayName   String?  @map("display_name") @db.VarChar(255)
+  domain        String?  @db.VarChar(100) // WET, DSC, SO, POS
+  status        String   @default("draft") @db.VarChar(50)
+  description   String?  @db.Text
+  metadata      Json     @default("{}")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  outgoingRels  GraphRelationship[] @relation("SourceRelationships")
+  incomingRels  GraphRelationship[] @relation("TargetRelationships")
+
+  @@map("graph_objects")
+}
+
+model GraphRelationship {
+  id                String       @id @default(uuid()) @db.Uuid
+  relationshipId    String       @unique @map("relationship_id") @db.VarChar(100)
+  sourceObjectId    String       @map("source_object_id") @db.VarChar(100)
+  targetObjectId    String       @map("target_object_id") @db.VarChar(100)
+  relationshipType  String       @map("relationship_type") @db.VarChar(50) // communicates_with, sends_to, uses
+  communicationType String?      @map("communication_type") @db.VarChar(50) // SAP_PO, REST_API, IDoc
+  dataType          String?      @map("data_type") @db.VarChar(50)
+  status            String       @default("draft") @db.VarChar(50)
+  metadata          Json         @default("{}")
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
+
+  sourceObject      GraphObject  @relation("SourceRelationships", fields: [sourceObjectId], references: [objectId], onDelete: Cascade)
+  targetObject      GraphObject  @relation("TargetRelationships", fields: [targetObjectId], references: [objectId], onDelete: Cascade)
+
+  @@map("graph_relationships")
+}
+
+model TestCaseGraphLink {
+  id               String      @id @default(uuid()) @db.Uuid
+  testCaseId       String      @map("test_case_id") @db.Uuid
+  graphObjectId    String      @map("graph_object_id") @db.VarChar(100) // SYS_DOMS, IF_RITS_009
+  relationshipType String      @default("validates") @map("relationship_type") @db.VarChar(50)
+  createdAt        DateTime    @default(now()) @map("created_at")
+
+  testCase         TestCase    @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+
+  @@unique([testCaseId, graphObjectId])
+  @@map("test_case_graph_links")
+}

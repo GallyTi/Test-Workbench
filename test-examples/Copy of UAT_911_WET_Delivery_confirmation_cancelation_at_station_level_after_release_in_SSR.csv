@@ -1,0 +1,54 @@
+﻿,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,Test scenario ID,911,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,Test scenario description,UAT_911_WET_Delivery_confirmation_cancelation_at_station_level_after_release_before_processed_in_SSR,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,Test script Responsible,Tomáš Vitek,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,Test cycle,UAT,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,Date completed,1/10/25 11:25,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,Test status,Passed,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,Test manager comment,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+5,,,,,,,,,,,0,5,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Step No.,Step description,Transaction code or report,User role,Executed by,Test condition description (optional),Selection screen fields,Input data value,Expected result,Generated document number,Actual result / print screen,Execution Status,Last Defect number(s),Execution date,Comment,,,,,,,,,,,,,,,,,,,,,,,,,,,
+1,Open SAP Launchpad \ Wet Stock Movements App,WSM App,Station Partner,"ITC:
+CZ, RO, SK, SLO: Vitek Tomas / Olbert Matus
+
+UAT:
+CZ:
+RO: Nadasi Csaba
+SK:
+SLO: Olivo David / Vida Marijana",N678,,,"SAP opened, wet stock mngmt apps available",,,Passed,,9/24/2025 11:45,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+2,Select DelConf which is already released (green status = DelConf paired to DelNote) but not processed in SSR (= no iDoc generated yet),ZSSR_FM_DCREP,Station Accounting,"ITC:
+CZ, RO, SK, SLO: Labanc Gergely, Olbert Matus
+
+UAT:
+CZ: Kabanova Miriam
+RO: Cotoara Maria-Diana / Pal Claudia
+SK: Kabanova Miriam
+SLO: Ferencak Anja",DelConf prepared within previous test scenario,,DelConf ID = 1318000000,DelConf identified,,,Passed,,9/24/2025 11:45,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+3,Stock mvmts list - select the same DelConf from the list to cancel,WSM App,Station Partner,"ITC:
+CZ, RO, SK, SLO: Vitek Tomas / Olbert Matus
+
+UAT:
+CZ:
+RO: Nadasi Csaba
+SK:
+SLO: Olivo David / Vida Marijana",,,,"DelConf found and selected, detailed view opened",,,Passed,,9/24/2025 11:45,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+4,"Stock mvmts list - Storno DelConf
+- successfully cancelled",WSM App,Station Partner,"ITC:
+CZ, RO, SK, SLO: Vitek Tomas / Olbert Matus
+
+UAT:
+CZ:
+RO: Nadasi Csaba
+SK:
+SLO: Olivo David / Vida Marijana",,,,DelConf cancelled,,,Passed,,9/24/2025 11:45,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+5,Check DelConf reversal status and relevancy for further processing (process indicator),"ZSSR_FM_DCREP
+ZSSR_FM_REP1",Station Accounting,"ITC:
+CZ, RO, SK, SLO: Labanc Gergely, Olbert Matus
+
+UAT:
+CZ: Kabanova Miriam
+RO: Cotoara Maria-Diana / Pal Claudia
+SK: Kabanova Miriam
+SLO: Ferencak Anja",,,,DelConf checked in SSR,,,Passed,,10/1/2025 11:25,"26.9.DO: opened a defect 290  (TV already detecting)
+1.10.DO: 2 documents created (delivery and storno - visible into second report). Into first report just material movements which should be posted and also under Storno there is visible X.",,,,,,,,,,,,,,,,,,,,,,,,,,,

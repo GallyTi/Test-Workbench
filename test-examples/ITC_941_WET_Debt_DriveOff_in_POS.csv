@@ -1,0 +1,96 @@
+﻿,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,Test scenario ID,941,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,Test scenario description,ITC_941_WET_Debt_DriveOff_in_POS,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,Test script Responsible,Vitek Tomas,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,Test cycle,ITC,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,Date completed,22/9/25 13:38,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,Test status,Passed,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,Test manager comment,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+21,,,,,,,,,,,0,21,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Step No.,Step description,Transaction code or report,User role,Executed by,Test condition description (optional),Selection screen fields,Input data value,Expected result,Generated document number,Actual result / print screen,Execution Status,Last Defect number(s),Execution date,Comment,,,,,,,,,,,,,,,,,,,,,,,,,,,
+1,DEBT process = TC ID 624_OCI_POS_Transaction_parking.xlsm,,Test Manager,,,,,Scenario is passed,,,Passed,,9/18/2025 14:00,"624 not passed, as discussed it is not a problem.",,,,,,,,,,,,,,,,,,,,,,,,,,,
+2,"Prepare fuelling at dispenser, keep it unpaid",,Cashier,Kudlej Viliam,PumpSim running,,Evo95,"Fuelling at dispenser finished and displayed in POS, dispenser is occupied/blocked",,,Passed,,9/18/2025 15:05,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+3,Process realized fuelling transaction to basket and finalize by payment: CASH,,Cashier,Kudlej Viliam,,,"Customer left station without payment, without identification of himself
+Evo95 / CASH","Fuelling from dispnser moved to basket and paid by CASH, sales receipt printed",4-5-0-1-877-0,,Passed,,9/18/2025 15:05,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+4,"Create  Financial Transaction (Pay in \ Pay out) on POS:
+
+Drive-off (PayOut id 154)
+RO: Evadare
+SLO: ??",,Cashier,Kudlej Viliam,"CZ - relevant
+RO - relevant
+SK - not relevant
+SLO - relevant","POS/ cash movements history/ ""Pay-out“ button/ type Drive-off",Enter financial amount (the same as in previous step) and comment,Transaction registerred in POS,,,Passed,,9/18/2025 15:05,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+5,"Customer returns to SeS - wants to pay by CASH
+=> no sales storno needed
+=> original sales receipt is given to customer",,Cashier,Kudlej Viliam,"CZ - relevant
+RO - relevant
+SK - not relevant
+SLO - relevant",,,Sales receipt given to customer,4-5-0-1-877-0,,Passed,,9/18/2025 15:05,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+6,"Create  Financial Transaction (Pay in \ Pay out) on POS:
+
+Drive-off payment (PayIn id 154)
+RO - Rambursarea datorie
+SLO - ??",,Cashier,Kudlej Viliam,"CZ - relevant
+RO - relevant
+SK - not relevant
+SLO - relevant","POS/ cash movements history/ ""Pay-in“ button/ type Drive-off payment",,Transaction registerred in POS,,,Passed,,9/18/2025 15:05,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+7,"Prepare fuelling at dispenser, keep it unpaid",,Cashier,Kudlej Viliam,PumpSim running,,Evo95,"Fuelling at dispenser finished and displayed in POS, dispenser is occupied/blocked",,,Passed,,9/18/2025 15:05,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+8,Process realized fuelling transaction to basket and finalize by payment: CASH,,Cashier,Kudlej Viliam,,,"Customer left station without payment, without identification of himself
+Evo95 / CASH","Fuelling from dispnser moved to basket and paid by CASH, sales receipt printed",4-5-0-1-878-0,,Passed,,9/18/2025 15:05,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+9,"Create  Financial Transaction (Pay in \ Pay out) on POS:
+
+Drive-off (PayOut id 154)
+RO: Evadare
+SLO: ??",,Cashier,Kudlej Viliam,"CZ - relevant
+RO - relevant
+SK - not relevant
+SLO - relevant","POS/ cash movements history/ ""Pay-out“ button/ type Drive-off",Enter financial amount (the same as in previous step) and comment,Transaction registerred in POS,,,Passed,,9/18/2025 15:05,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+10,"Customer returns to SeS - wants to pay by BANK CARD
+=> sales storno of original transaction needed
+=> original sales receipt is kept at SeS together with Storno receipt",,Cashier,Kudlej Viliam,"CZ - relevant
+RO - relevant
+SK - not relevant
+SLO - relevant",Scan barcode from original receipt to make storno,STORNO - Evo95 / CASH,"The same items from original receipt are prefilled to basket, with the same Qty, prices, discounts, only with minus sign.
+Storno of sales receipt created/ printed.",4-5-0-1-879-0,,Passed,,9/18/2025 15:05,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+11,"System forces cashier to following sales - basket is prefilled by the same (risk) items according to Storno receipt
+=> processed by BANK CARD",,Cashier,Kudlej Viliam,"CZ - relevant
+RO - relevant
+SK - not relevant
+SLO - relevant",Basket is prefilled,Evo95 / Bank card,Payment processed and sales receipt created/ printed.,4-5-0-1-880-0,,Passed,,9/18/2025 15:05,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+12,"Create  Financial Transaction (Pay in \ Pay out) on POS:
+
+Drive-off payment (PayIn id 154)
+RO - Rambursarea datorie
+SLO - ??",,Cashier,Kudlej Viliam,"CZ - relevant
+RO - relevant
+SK - not relevant
+SLO - relevant","POS/ cash movements history/ ""Pay-in“ button/ type Drive-off payment",,Transaction registerred in POS,,,Passed,,9/18/2025 15:05,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+13,"Prepare fuelling at dispenser, keep it unpaid",,Cashier,Kudlej Viliam,PumpSim running,,EvoDiesel,"Fuelling at dispenser finished and displayed in POS, dispenser is occupied/blocked",,,Passed,,9/18/2025 15:05,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+14,Process realized fuelling transaction to basket and finalize by payment: CASH,,Cashier,Kudlej Viliam,,,"Customer left station without payment, without identification of himself
+EvoDiesel / CASH","Fuelling from dispnser moved to basket and paid by CASH, sales receipt printed",4-5-0-1-881-0,,Passed,,9/18/2025 15:05,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+15,"Create  Financial Transaction (Pay in \ Pay out) on POS:
+
+Drive-off (PayOut id 154)
+RO: Evadare
+SLO: ??",,Cashier,Kudlej Viliam,"CZ - relevant
+RO - relevant
+SK - not relevant
+SLO - relevant","POS/ cash movements history/ ""Pay-out“ button/ type Drive-off",Enter financial amount (the same as in previous step) and comment,Transaction registerred in POS,,,Passed,,9/18/2025 15:05,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+16,"Customer does not return to SeS
+=> original sales receipt is kept at SeS, SeS Partner is informed / Retail Accounting is informed",,Cashier,Kudlej Viliam,"CZ - relevant
+RO - relevant
+SK - not relevant
+SLO - relevant",,,Sales receipt's scan sent to Retail Accounting,4-5-0-1-881-0,,Passed,,9/18/2025 15:05,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+17,Run the CAR Background Task job,/POSDW/PDIS ,RITS Support Central Systems,"Benedikovic Marian, Krutil Stanislav",,,,,,,Passed,,9/22/2025 10:45,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+18,Now check in detail  all of the transactions have been loaded correctly into the CAR POS Workbench and that there are errors and everything matches the mapping specification.,/POSDW/MON0,RITS Support Central Systems,"Benedikovic Marian, Krutil Stanislav",,,,,,,Passed,,9/22/2025 10:45,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+19,SAP OIL SSR - Check payment cards data,S_SO5_65000678,FI Station Accountant,Labanc Gergely,,,,,,,Passed,,9/21/2025 21:46,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+20,SAP OIL SSR - Daily sales invoicing,O3RI01,FI Station Accountant,Labanc Gergely,,,,,,,Passed,,9/22/2025 13:26,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+21,SAP OIL SSR - Display FI document,FB03,FI Station Accountant,Labanc Gergely,,,,,,,Passed,,9/22/2025 13:38,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
