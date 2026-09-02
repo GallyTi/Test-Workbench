@@ -1,9 +1,14 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+export const getApiBaseUrl = () => {
+  if (typeof window !== 'undefined') {
+    return `http://${window.location.hostname}:4000`;
+  }
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+};
 
 export const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: typeof window !== 'undefined' ? `http://${window.location.hostname}:4000` : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'),
   headers: {
     'Content-Type': 'application/json',
   },
@@ -11,6 +16,7 @@ export const api = axios.create({
 
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
+    config.baseURL = `http://${window.location.hostname}:4000`;
     const token = localStorage.getItem('rits_access_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
