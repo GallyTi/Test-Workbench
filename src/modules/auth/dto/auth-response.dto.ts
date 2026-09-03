@@ -19,6 +19,12 @@ export class UserProfileDto {
 
   @ApiProperty({ required: false })
   teamsUserId?: string;
+
+  @ApiProperty({ required: false })
+  slovnaftId?: string;
+
+  @ApiProperty({ required: false })
+  isApproved?: boolean;
 }
 
 export class AuthResponseDto {

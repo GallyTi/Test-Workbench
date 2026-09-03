@@ -144,6 +144,16 @@ export default function TestExecutionPage({ params }: { params: Promise<{ id: st
 
   const updateStatus = async (status: string) => {
     if (!selectedStep) return;
+
+    // Kontrola povinnej fotografie nastavenej administrátorom
+    const isPhotoRequired = selectedStep.requiresProofPhoto || selectedStep.testCaseStep?.requiresProofPhoto;
+    if (status === 'PASSED' && isPhotoRequired && attachments.length === 0) {
+      alert(
+        '⚠️ POZOR: Pre tento testovací krok je nastavená POVINNÁ FOTOGRAFIA / SCREENSHOT ako dôkaz (Proof)!\n\nPred označením kroku za PASSED musíte nahrať aspoň jednu fotografiu alebo screenshot (stlačte "Nahrať Dôkaz" alebo vložte screenshot zo schránky pomocou Ctrl+V).'
+      );
+      return;
+    }
+
     setLoading(true);
     try {
       await api.patch(`/test-runs/steps/${selectedStep.id}`, {
@@ -410,7 +420,41 @@ export default function TestExecutionPage({ params }: { params: Promise<{ id: st
                   </h2>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  {/* Admin Toggle for Required Proof Photo */}
+                  {(user?.role === 'ADMIN' || user?.role === 'TEST_LEAD') && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={async () => {
+                        const newReq = !selectedStep.testCaseStep?.requiresProofPhoto;
+                        try {
+                          await api.patch(
+                            `/projects/${run.projectId}/test-cases/steps/${selectedStep.testCaseStep.id}`,
+                            { requiresProofPhoto: newReq }
+                          );
+                          setSelectedStep((prev: any) => ({
+                            ...prev,
+                            testCaseStep: { ...prev.testCaseStep, requiresProofPhoto: newReq },
+                          }));
+                        } catch (err: any) {
+                          alert(err.message || 'Chyba nastavenia povinnej fotografie');
+                        }
+                      }}
+                      className={`h-8 text-xs font-semibold border ${
+                        selectedStep.testCaseStep?.requiresProofPhoto
+                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                          : 'border-white/15 text-zinc-400 hover:text-white'
+                      }`}
+                      title="Prepínač pre administrátora: Vyžadovať povinnú fotografiu ako dôkaz pred úspešným dokončením"
+                    >
+                      <ImageIcon className="w-3.5 h-3.5 mr-1" />
+                      {selectedStep.testCaseStep?.requiresProofPhoto
+                        ? '📷 Povinná fotka: ZAP'
+                        : '📷 Povinná fotka: VYP'}
+                    </Button>
+                  )}
+
                   <Button
                     size="sm"
                     variant={activeTimer?.stepExecutionId === selectedStep.id ? 'destructive' : 'outline'}
@@ -434,6 +478,30 @@ export default function TestExecutionPage({ params }: { params: Promise<{ id: st
                   </Button>
                 </div>
               </div>
+
+              {/* Mandatory Photo Alert Banner */}
+              {(selectedStep.requiresProofPhoto || selectedStep.testCaseStep?.requiresProofPhoto) && (
+                <div className="mt-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">📷</span>
+                    <div>
+                      <span className="font-bold block">POVINNÁ FOTOGRAFIA / SCREENSHOT AKO DÔKAZ</span>
+                      <span className="text-[11px] text-zinc-400">
+                        Administrátor vyžaduje aspoň jeden screenshot pred označením kroku za PASSED.
+                      </span>
+                    </div>
+                  </div>
+                  {attachments.length > 0 ? (
+                    <Badge variant="success" className="text-[10px] font-mono">
+                      ✓ Nahrané ({attachments.length})
+                    </Badge>
+                  ) : (
+                    <Badge variant="destructive" className="text-[10px] font-mono animate-pulse">
+                      Chýba fotografia
+                    </Badge>
+                  )}
+                </div>
+              )}
 
               {/* Bento Cards for Action, Expected, Payload */}
               <div className="grid grid-cols-1 gap-3 mt-4">

@@ -147,6 +147,7 @@ export class TestCasesService {
       status?: StepStatusEnum;
       actualResult?: string;
       assignedToId?: string;
+      requiresProofPhoto?: boolean;
     },
     userId: string,
   ) {
@@ -161,6 +162,23 @@ export class TestCasesService {
       throw new NotFoundException('Testovací krok nebol nájdený');
     }
 
+    // Ak krok vyžaduje povinnú fotografiu a označuje sa ako PASSED, overiť prítomnosť prílohy
+    const isRequired = data.requiresProofPhoto !== undefined ? data.requiresProofPhoto : step.requiresProofPhoto;
+    if (isRequired && data.status === StepStatusEnum.PASSED) {
+      const attachmentsCount = await this.prisma.attachment.count({
+        where: {
+          targetType: { in: ['STEP_DIRECT', 'STEP_EXECUTION'] },
+          targetId: stepId,
+        },
+      });
+
+      if (attachmentsCount === 0) {
+        throw new BadRequestException(
+          'Tento krok má nastavené povinné priloženie fotografie / screenshotu ako dôkaz (Proof). Bez priloženej fotografie nie je možné krok uzavrieť ako Úspešný (PASSED).'
+        );
+      }
+    }
+
     const prevAssignedId = step.assignedToId;
 
     const updatedStep = await this.prisma.testCaseStep.update({
@@ -169,6 +187,7 @@ export class TestCasesService {
         ...(data.status && { status: data.status, executedById: userId }),
         ...(data.actualResult !== undefined && { actualResult: data.actualResult }),
         ...(data.assignedToId !== undefined && { assignedToId: data.assignedToId || null }),
+        ...(data.requiresProofPhoto !== undefined && { requiresProofPhoto: data.requiresProofPhoto }),
       },
       include: {
         assignedTo: { select: { id: true, fullName: true, email: true } },

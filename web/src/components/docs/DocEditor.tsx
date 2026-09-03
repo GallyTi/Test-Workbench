@@ -31,6 +31,7 @@ import {
   Link2,
   Sparkles,
   HelpCircle,
+  Network,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { DocMarkdownRenderer } from './DocMarkdownRenderer';
@@ -57,6 +58,7 @@ export function DocEditor({
   const [changeSummary, setChangeSummary] = useState('');
   const [showCalloutMenu, setShowCalloutMenu] = useState(false);
   const [showTcMenu, setShowTcMenu] = useState(false);
+  const [showMermaidMenu, setShowMermaidMenu] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -355,6 +357,67 @@ export function DocEditor({
                   className="w-full p-1.5 hover:bg-rose-500/20 text-rose-300 text-xs rounded-lg flex items-center gap-2 text-left"
                 >
                   <ShieldAlert className="w-3.5 h-3.5" /> Kritické (Danger)
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Mermaid UML Diagram Dropdown */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowMermaidMenu(!showMermaidMenu)}
+              title="Vložiť UML / Mermaid diagram"
+              className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 text-xs font-semibold ${
+                showMermaidMenu ? 'bg-purple-600/30 text-purple-300' : 'hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              <Network className="w-4 h-4 text-purple-400" />
+              <span className="hidden xl:inline text-[11px]">UML</span>
+            </button>
+
+            {showMermaidMenu && (
+              <div className="absolute left-0 top-full mt-2 w-64 bg-zinc-900 border border-white/20 rounded-xl shadow-2xl p-1.5 z-50 space-y-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    insertTextAtCursor(
+                      '\n```mermaid\nsequenceDiagram\n    autonumber\n    actor Tester\n    participant POS as POS Pokladňa\n    participant DOMS as DOMS Controller\n    participant SSR as SSR Hub\n    participant SAP as SAP ERP S/4HANA\n    Tester->>POS: Zadanie dodávky paliva (MB01)\n    POS->>DOMS: Overenie hladiny v nádrži\n    DOMS-->>POS: Meranie sondy OK\n    POS->>SSR: IF_RITS_009 Settlement Payload\n    SSR->>SAP: IDoc WMMBID02 Účtovanie\n    SAP-->>SSR: Potvrdenie dokladu 50001829\n```\n'
+                    );
+                    setShowMermaidMenu(false);
+                  }}
+                  className="w-full p-2 hover:bg-purple-500/20 text-purple-200 text-xs rounded-lg text-left block"
+                >
+                  <span className="font-bold block">1. Sekvenčný Diagram (Sequence)</span>
+                  <span className="text-[10px] text-zinc-400">Komunikácia POS ➔ DOMS ➔ SSR ➔ SAP</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    insertTextAtCursor(
+                      '\n```mermaid\ngraph TD\n    A[Štart Testu] --> B{Transakcia na POS}\n    B -->|Úspešná| C[Generovanie Bločku]\n    B -->|Zlyhanie| D[Zápis Dlhovek v POS]\n    C --> E[Odoslanie do SSR]\n    D --> E\n    E --> F[Zúčtovanie v SAP ERP]\n```\n'
+                    );
+                    setShowMermaidMenu(false);
+                  }}
+                  className="w-full p-2 hover:bg-purple-500/20 text-purple-200 text-xs rounded-lg text-left block"
+                >
+                  <span className="font-bold block">2. Vývojový Diagram (Flowchart)</span>
+                  <span className="text-[10px] text-zinc-400">Rozhodovacie stromy a vetvenia procesov</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    insertTextAtCursor(
+                      '\n```mermaid\nstateDiagram-v2\n    [*] --> Untested\n    Untested --> InProgress: Spustenie kroku\n    InProgress --> Passed: Overené bez chyby\n    InProgress --> Failed: Nájdená odchýlka\n    Failed --> BugReported: Vytvorenie defektu\n    Passed --> [*]\n```\n'
+                    );
+                    setShowMermaidMenu(false);
+                  }}
+                  className="w-full p-2 hover:bg-purple-500/20 text-purple-200 text-xs rounded-lg text-left block"
+                >
+                  <span className="font-bold block">3. Stavový Automat (State Machine)</span>
+                  <span className="text-[10px] text-zinc-400">Životný cyklus testu a prechody stavov</span>
                 </button>
               </div>
             )}

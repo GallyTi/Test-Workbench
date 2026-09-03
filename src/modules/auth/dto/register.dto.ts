@@ -17,6 +17,16 @@ export class RegisterDto {
   @IsNotEmpty({ message: 'Meno je povinné' })
   fullName: string;
 
+  @ApiProperty({ example: 'SLOVNAFT-10492 alebo +421 905 123 456', description: 'Slovnaft / Zamestnanecké ID alebo telefónne číslo', required: false })
+  @IsOptional()
+  @IsString()
+  slovnaftId?: string;
+
+  @ApiProperty({ example: '+421 905 123 456', required: false })
+  @IsOptional()
+  @IsString()
+  phoneNumber?: string;
+
   @ApiProperty({ enum: UserRole, default: UserRole.TESTER, required: false })
   @IsOptional()
   @IsEnum(UserRole, { message: 'Neplatná rola používateľa' })

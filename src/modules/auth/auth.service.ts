@@ -32,6 +32,9 @@ export class AuthService {
         fullName: dto.fullName,
         role: dto.role || UserRole.TESTER,
         teamsUserId: dto.teamsUserId,
+        slovnaftId: dto.slovnaftId || null,
+        phoneNumber: dto.phoneNumber || null,
+        isApproved: false, // Musí byť schválený administrátorom
       },
     });
 
@@ -46,6 +49,8 @@ export class AuthService {
         role: user.role,
         avatarUrl: user.avatarUrl,
         teamsUserId: user.teamsUserId,
+        slovnaftId: user.slovnaftId,
+        isApproved: user.isApproved,
       },
     };
   }
@@ -57,6 +62,12 @@ export class AuthService {
 
     if (!user || !user.isActive) {
       throw new UnauthorizedException('Neplatné prihlasovacie údaje alebo neaktívny účet');
+    }
+
+    if (!user.isApproved) {
+      throw new UnauthorizedException(
+        'Váš účet čaká na autorizáciu administrátorom. O schválení budete informovaný správcom systému.'
+      );
     }
 
     const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);

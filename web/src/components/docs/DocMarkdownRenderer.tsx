@@ -16,6 +16,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { MediaViewerModal } from '@/components/ui/MediaViewerModal';
+import { MermaidDiagram } from './MermaidDiagram';
 
 interface DocMarkdownRendererProps {
   content: string;
@@ -116,6 +117,12 @@ export function DocMarkdownRenderer({ content, onSelectTestCase }: DocMarkdownRe
       i++; // skip closing ```
       const fullCode = codeLines.join('\n');
       const blockIdx = i;
+
+      // Ak ide o Mermaid UML diagram, vykresliť cez interaktívny Mermaid renderer
+      if (lang.toLowerCase() === 'mermaid') {
+        blocks.push(<MermaidDiagram key={`mermaid-${blockIdx}`} chart={fullCode} />);
+        continue;
+      }
 
       blocks.push(
         <div

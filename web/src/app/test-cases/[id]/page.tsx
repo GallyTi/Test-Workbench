@@ -182,10 +182,58 @@ export default function TestCaseDetailPage({ params }: { params: Promise<{ id: s
     setExpandedSteps({});
   };
 
+  // Clipboard Ctrl+V handler for screenshots
+  useEffect(() => {
+    const handlePaste = async (e: ClipboardEvent) => {
+      const expandedStepId = Object.keys(expandedSteps).find((k) => expandedSteps[k]);
+      if (!expandedStepId) return;
+
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const file = items[i].getAsFile();
+          if (file) {
+            setUploadingForStep(expandedStepId);
+            const formData = new FormData();
+            formData.append('file', file, `screenshot_proof_${Date.now()}.png`);
+            try {
+              await api.post(`/attachments/TEST_CASE_STEP/${expandedStepId}`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+              });
+              await loadStepMedia(expandedStepId);
+            } catch (err) {
+              console.error('Chyba pri vkladaní screenshotu zo schránky:', err);
+            } finally {
+              setUploadingForStep(null);
+            }
+          }
+        }
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [expandedSteps]);
+
   const handleUpdateStep = async (
     stepId: string,
-    updates: { status?: string; actualResult?: string; assignedToId?: string }
+    updates: { status?: string; actualResult?: string; assignedToId?: string; requiresProofPhoto?: boolean }
   ) => {
+    // Ak krok vyžaduje povinnú fotku a tester ho označuje ako PASSED, overiť či existuje príloha
+    const step = testCase?.steps?.find((s: any) => s.id === stepId);
+    const isRequired = updates.requiresProofPhoto !== undefined ? updates.requiresProofPhoto : step?.requiresProofPhoto;
+    if (isRequired && updates.status === 'PASSED') {
+      const attCount = stepAttachments[stepId]?.length || 0;
+      if (attCount === 0) {
+        alert(
+          '⚠️ POZOR: Pre tento testovací krok je nastavená POVINNÁ FOTOGRAFIA / SCREENSHOT ako dôkaz (Proof)!\n\nPred označením kroku za PASSED musíte nahrať aspoň jednu fotografiu (použite tlačidlo "Pridať Foto" alebo vložte screenshot zo schránky stlačením Ctrl+V).'
+        );
+        return;
+      }
+    }
+
     try {
       await api.patch(`/projects/${activeProject?.id || 'RITS'}/test-cases/steps/${stepId}`, updates);
       await fetchTestCase();
@@ -283,7 +331,7 @@ export default function TestCaseDetailPage({ params }: { params: Promise<{ id: s
   const progressPct = totalCount > 0 ? Math.round((passedCount / totalCount) * 100) : 0;
 
   return (
-    <div className="space-y-5 pb-20 animate-in fade-in duration-500 max-w-6xl mx-auto">
+    <div className="space-y-5 pb-20 animate-in fade-in duration-500 max-w-[1680px] w-full mx-auto">
       {/* Hidden Multi-file input (Images, Videos, Docs) */}
       <input
         type="file"
@@ -565,6 +613,12 @@ export default function TestCaseDetailPage({ params }: { params: Promise<{ id: s
                         </span>
                       )}
 
+                      {step.requiresProofPhoto && (
+                        <span className="text-amber-400 font-bold flex items-center gap-1 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px]">
+                          📷 Povinná fotka
+                        </span>
+                      )}
+
                       {updatedTimestamp && (
                         <span className="text-zinc-500">Zmenené: {updatedTimestamp}</span>
                       )}
@@ -671,6 +725,25 @@ export default function TestCaseDetailPage({ params }: { params: Promise<{ id: s
                         ))}
                       </select>
                     </div>
+
+                    {/* Admin Toggle for Required Proof Photo */}
+                    {(user?.role === 'ADMIN' || user?.role === 'TEST_LEAD') && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleUpdateStep(step.id, { requiresProofPhoto: !step.requiresProofPhoto })
+                        }
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all border ${
+                          step.requiresProofPhoto
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm'
+                            : 'bg-white/[0.04] text-zinc-400 border-white/[0.08] hover:text-white hover:bg-white/10'
+                        }`}
+                        title="Admin prepínač: Vyžadovať povinnú fotografiu pred označením kroku za PASSED"
+                      >
+                        <ImageIcon className="w-3.5 h-3.5" />
+                        {step.requiresProofPhoto ? '📷 Povinná fotka: ZAPNUTÁ' : '📷 Povinná fotka: Vypnutá'}
+                      </button>
+                    )}
                   </div>
 
                   {/* Action & Expected Result Grid */}

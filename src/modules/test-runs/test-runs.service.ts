@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { CreateTestRunDto, UpdateStepExecutionDto } from './dto/test-run.dto';
 import { StepStatusEnum, RunStatusEnum } from '@prisma/client';
@@ -143,11 +143,30 @@ export class TestRunsService {
       where: { id: stepExecutionId },
       include: {
         testCaseExecution: true,
+        testCaseStep: true,
       },
     });
 
     if (!stepExec) {
       throw new NotFoundException('Krok exekúcie nebol nájdený');
+    }
+
+    if (
+      dto.status === StepStatusEnum.PASSED &&
+      (stepExec.requiresProofPhoto || stepExec.testCaseStep?.requiresProofPhoto)
+    ) {
+      const attachmentsCount = await this.prisma.attachment.count({
+        where: {
+          targetType: 'STEP_EXECUTION',
+          targetId: stepExecutionId,
+        },
+      });
+
+      if (attachmentsCount === 0) {
+        throw new BadRequestException(
+          'Tento krok má nastavenú povinnú fotografiu / screenshot ako dôkaz (Proof). Pred označením kroku za PASSED musíte nahrať aspoň jednu fotografiu.'
+        );
+      }
     }
 
     const updated = await this.prisma.$transaction(async (tx) => {
