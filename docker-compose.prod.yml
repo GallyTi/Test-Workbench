@@ -1,8 +1,6 @@
 services:
   web:
-    build:
-      context: ./web
-      dockerfile: Dockerfile
+    image: test-workbench-web:latest
     container_name: rits_workbench_web
     restart: always
     ports:
@@ -23,9 +21,7 @@ services:
       - rits_network
 
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: test-workbench-api:latest
     container_name: rits_workbench_api
     restart: always
     ports:
