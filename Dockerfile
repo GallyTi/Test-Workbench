@@ -25,6 +25,10 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
+RUN chown -R node:node /app
+
+USER node
+
 EXPOSE 4000
 
 CMD ["node", "dist/main"]
