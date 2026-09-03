@@ -14,12 +14,14 @@ import {
   History,
   FileUp,
   Sparkles,
+  BookOpen,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Prehľad & Dashboard', icon: LayoutDashboard },
-  { href: '/test-runs', label: 'Testovacie Behy (Exec)', icon: PlayCircle },
+  { href: '/docs', label: 'Confluence Dokumentácia', icon: BookOpen },
   { href: '/test-cases', label: 'Katalóg Testov', icon: FileSpreadsheet },
+  { href: '/test-runs', label: 'Testovacie Behy (Exec)', icon: PlayCircle },
   { href: '/excel-import', label: 'Excel Import Workbench', icon: FileUp },
   { href: '/graph', label: 'Architektúrny Graf', icon: Network },
   { href: '/admin/bottlenecks', label: 'SLA Časovače & Bottlenecks', icon: ClockAlert },

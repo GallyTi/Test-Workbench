@@ -93,6 +93,10 @@ model User {
   notifications         Notification[]
   importJobs            ExcelImportJob[]
   auditLogs             AuditLog[]
+  createdDocSpaces      DocSpace[]             @relation("CreatedDocSpaces")
+  authoredDocPages      DocPage[]              @relation("AuthoredDocPages")
+  editedDocPages        DocPage[]              @relation("EditedDocPages")
+  docRevisions          DocPageRevision[]
 
   @@map("users")
 }
@@ -111,6 +115,7 @@ model Project {
   testRuns    TestRun[]
   bugs        BugReport[]
   importJobs  ExcelImportJob[]
+  docSpaces   DocSpace[]
 
   @@map("projects")
 }
@@ -499,4 +504,73 @@ model TestCaseGraphLink {
 
   @@unique([testCaseId, graphObjectId])
   @@map("test_case_graph_links")
+}
+
+// -------------------------------------------------------------
+// Confluence / Notion Style Knowledge Base & Documentation Models
+// -------------------------------------------------------------
+
+model DocSpace {
+  id          String    @id @default(uuid()) @db.Uuid
+  projectId   String?   @map("project_id") @db.Uuid
+  key         String    @db.VarChar(50) // e.g. "RITS-DOC", "WET-KB", "POS-MANUALS"
+  name        String    @db.VarChar(255)
+  description String?   @db.Text
+  icon        String    @default("📚") @db.VarChar(50)
+  color       String    @default("#3b82f6") @db.VarChar(50)
+  orderIndex  Int       @default(0) @map("order_index")
+  createdById String    @map("created_by") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  project     Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy   User      @relation("CreatedDocSpaces", fields: [createdById], references: [id], onDelete: Cascade)
+  pages       DocPage[]
+
+  @@unique([projectId, key])
+  @@map("doc_spaces")
+}
+
+model DocPage {
+  id             String            @id @default(uuid()) @db.Uuid
+  spaceId        String            @map("space_id") @db.Uuid
+  parentPageId   String?           @map("parent_page_id") @db.Uuid
+  title          String            @db.VarChar(255)
+  slug           String            @db.VarChar(255)
+  content        String            @default("") @db.Text
+  icon           String            @default("📄") @db.VarChar(50)
+  coverUrl       String?           @map("cover_url") @db.Text
+  orderIndex     Int               @default(0) @map("order_index")
+  isPublished    Boolean           @default(true) @map("is_published")
+  tags           String[]          @default([])
+  authorId       String            @map("author_id") @db.Uuid
+  lastEditedById String?           @map("last_edited_by_id") @db.Uuid
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  space          DocSpace          @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  parentPage     DocPage?          @relation("NestedDocPages", fields: [parentPageId], references: [id], onDelete: Cascade)
+  childPages     DocPage[]         @relation("NestedDocPages")
+  author         User              @relation("AuthoredDocPages", fields: [authorId], references: [id], onDelete: Cascade)
+  lastEditedBy   User?             @relation("EditedDocPages", fields: [lastEditedById], references: [id], onDelete: SetNull)
+  revisions      DocPageRevision[]
+
+  @@index([spaceId, parentPageId])
+  @@map("doc_pages")
+}
+
+model DocPageRevision {
+  id            String    @id @default(uuid()) @db.Uuid
+  pageId        String    @map("page_id") @db.Uuid
+  title         String    @db.VarChar(255)
+  content       String    @db.Text
+  editedById    String    @map("edited_by_id") @db.Uuid
+  changeSummary String?   @map("change_summary") @db.VarChar(255)
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  page          DocPage   @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  editedBy      User      @relation(fields: [editedById], references: [id], onDelete: Cascade)
+
+  @@index([pageId, createdAt])
+  @@map("doc_page_revisions")
 }

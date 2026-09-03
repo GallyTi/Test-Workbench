@@ -17,6 +17,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { RealtimeModule } from './modules/realtime/realtime.module';
 import { AuditLogModule } from './modules/audit-log/audit-log.module';
 import { GraphModule } from './modules/graph/graph.module';
+import { DocsModule } from './modules/docs/docs.module';
 
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
@@ -45,6 +46,7 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
     RealtimeModule,
     AuditLogModule,
     GraphModule,
+    DocsModule,
   ],
   providers: [
     {
