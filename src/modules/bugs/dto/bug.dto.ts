@@ -43,3 +43,35 @@ export class CreateBugDto {
   @IsString()
   externalTicketUrl?: string;
 }
+
+export class UpdateBugDto {
+  @ApiProperty({ example: 'Názov chyby', required: false })
+  @IsOptional()
+  @IsString()
+  title?: string;
+
+  @ApiProperty({ example: 'Popis chyby', required: false })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiProperty({ enum: BugSeverityEnum, required: false })
+  @IsOptional()
+  @IsEnum(BugSeverityEnum)
+  severity?: BugSeverityEnum;
+
+  @ApiProperty({ example: 'IN_PROGRESS', required: false })
+  @IsOptional()
+  @IsString()
+  status?: string;
+
+  @ApiProperty({ example: 'uuid-assigned-user-id', required: false })
+  @IsOptional()
+  @IsString()
+  assignedToId?: string;
+
+  @ApiProperty({ example: 'HIVE2-1049', required: false })
+  @IsOptional()
+  @IsString()
+  externalTicketUrl?: string;
+}

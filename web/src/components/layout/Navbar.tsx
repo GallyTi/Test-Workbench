@@ -26,14 +26,19 @@ import {
   Users,
   History,
   Check,
+  Sun,
+  Moon,
+  Languages,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
+import { useTranslation } from '@/lib/i18n';
 
 export function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, setUser, activeProject, setActiveProject, activeTimer } = useAppStore();
+  const { user, setUser, activeProject, setActiveProject, activeTimer, theme, toggleTheme, lang, toggleLang } = useAppStore();
+  const { t } = useTranslation();
 
   const [projects, setProjects] = useState<any[]>([]);
   const [unreadNotifications, setUnreadNotifications] = useState<any[]>([]);
@@ -157,7 +162,7 @@ export function Navbar() {
                   : 'text-zinc-400 hover:text-white hover:bg-white/[0.06]'
               )}
             >
-              Prehľad
+              {t('nav.dashboard')}
             </Link>
 
             {/* 2. Testovanie & QA Dropdown */}
@@ -380,6 +385,31 @@ export function Navbar() {
                 <span>({activeTimer.testCaseCode})</span>
               </Link>
             )}
+
+            {/* Language Switcher */}
+            <button
+              type="button"
+              onClick={toggleLang}
+              className="px-2 py-1 rounded-xl text-xs font-mono font-bold border border-white/10 hover:border-white/20 text-zinc-300 hover:text-white transition-colors flex items-center gap-1 bg-white/[0.04] hover:bg-white/[0.08]"
+              title={lang === 'sk' ? 'Prepnúť do angličtiny (Switch to English)' : 'Prepnúť do slovenčiny (Switch to Slovak)'}
+            >
+              <Languages className="w-3.5 h-3.5 text-blue-400" />
+              <span className="uppercase text-[10px]">{lang}</span>
+            </button>
+
+            {/* Dark / Light Theme Switcher */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/[0.08] transition-colors"
+              title={theme === 'dark' ? 'Prepnúť na biely režim (Light mode)' : 'Prepnúť na tmavý režim (Dark mode)'}
+            >
+              {theme === 'dark' ? (
+                <Sun className="w-4 h-4 text-amber-400" />
+              ) : (
+                <Moon className="w-4 h-4 text-blue-400" />
+              )}
+            </button>
 
             {/* Notification Bell */}
             <div className="relative">

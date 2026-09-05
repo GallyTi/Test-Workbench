@@ -97,6 +97,15 @@ export default function TestExecutionPage({ params }: { params: Promise<{ id: st
   // Ctrl+V Screenshot Paste Handler
   useEffect(() => {
     const handlePaste = async (e: ClipboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target?.tagName === 'INPUT' ||
+        target?.tagName === 'TEXTAREA' ||
+        target?.isContentEditable
+      ) {
+        return;
+      }
+
       if (!selectedStep || !user) return;
       const items = e.clipboardData?.items;
       if (!items) return;
@@ -105,6 +114,7 @@ export default function TestExecutionPage({ params }: { params: Promise<{ id: st
         if (items[i].type.indexOf('image') !== -1) {
           const file = items[i].getAsFile();
           if (file) {
+            e.preventDefault();
             const formData = new FormData();
             formData.append('file', file, `screenshot_${Date.now()}.png`);
             try {

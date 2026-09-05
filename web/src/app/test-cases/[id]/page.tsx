@@ -155,42 +155,6 @@ export default function TestCaseDetailPage({ params }: { params: Promise<{ id: s
     };
   }, [testCaseId, activeProject]);
 
-  // Global Ctrl+V Screenshot Paste handler
-  useEffect(() => {
-    const handlePaste = async (e: ClipboardEvent) => {
-      // Find first expanded step or first step
-      const targetStep =
-        Object.keys(expandedSteps).find((k) => expandedSteps[k]) ||
-        testCase?.steps?.[0]?.id;
-
-      if (!targetStep) return;
-
-      const items = e.clipboardData?.items;
-      if (!items) return;
-
-      for (let i = 0; i < items.length; i++) {
-        if (items[i].type.indexOf('image') !== -1) {
-          const file = items[i].getAsFile();
-          if (file) {
-            const formData = new FormData();
-            formData.append('file', file, `screenshot_step_${Date.now()}.png`);
-            try {
-              await api.post(`/attachments/TEST_CASE_STEP/${targetStep}`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-              });
-              loadStepMedia(targetStep);
-            } catch (err) {
-              console.error('Chyba pri nahrávaní screenshotu:', err);
-            }
-          }
-        }
-      }
-    };
-
-    window.addEventListener('paste', handlePaste);
-    return () => window.removeEventListener('paste', handlePaste);
-  }, [expandedSteps, testCase]);
-
   const toggleStepAccordion = (stepId: string) => {
     setExpandedSteps((prev) => ({
       ...prev,
@@ -210,11 +174,24 @@ export default function TestCaseDetailPage({ params }: { params: Promise<{ id: s
     setExpandedSteps({});
   };
 
-  // Clipboard Ctrl+V handler for screenshots
+  // Single robust Clipboard Ctrl+V Screenshot Paste handler
   useEffect(() => {
     const handlePaste = async (e: ClipboardEvent) => {
-      const expandedStepId = Object.keys(expandedSteps).find((k) => expandedSteps[k]);
-      if (!expandedStepId) return;
+      // If user is focused on an input or textarea (e.g. comment editor or step field), don't hijack
+      const target = e.target as HTMLElement | null;
+      if (
+        target?.tagName === 'INPUT' ||
+        target?.tagName === 'TEXTAREA' ||
+        target?.isContentEditable
+      ) {
+        return;
+      }
+
+      const targetStep =
+        Object.keys(expandedSteps).find((k) => expandedSteps[k]) ||
+        testCase?.steps?.[0]?.id;
+
+      if (!targetStep) return;
 
       const items = e.clipboardData?.items;
       if (!items) return;
@@ -223,16 +200,17 @@ export default function TestCaseDetailPage({ params }: { params: Promise<{ id: s
         if (items[i].type.indexOf('image') !== -1) {
           const file = items[i].getAsFile();
           if (file) {
-            setUploadingForStep(expandedStepId);
+            e.preventDefault();
+            setUploadingForStep(targetStep);
             const formData = new FormData();
-            formData.append('file', file, `screenshot_proof_${Date.now()}.png`);
+            formData.append('file', file, `screenshot_step_${Date.now()}.png`);
             try {
-              await api.post(`/attachments/TEST_CASE_STEP/${expandedStepId}`, formData, {
+              await api.post(`/attachments/TEST_CASE_STEP/${targetStep}`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
               });
-              await loadStepMedia(expandedStepId);
+              await loadStepMedia(targetStep);
             } catch (err) {
-              console.error('Chyba pri vkladaní screenshotu zo schránky:', err);
+              console.error('Chyba pri nahrávaní screenshotu:', err);
             } finally {
               setUploadingForStep(null);
             }
@@ -243,7 +221,7 @@ export default function TestCaseDetailPage({ params }: { params: Promise<{ id: s
 
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
-  }, [expandedSteps]);
+  }, [expandedSteps, testCase]);
 
   const handleAddStep = async (e: React.FormEvent) => {
     e.preventDefault();

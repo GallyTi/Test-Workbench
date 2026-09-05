@@ -1,7 +1,7 @@
-import { Controller, Post, Get, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { BugsService } from './bugs.service';
-import { CreateBugDto } from './dto/bug.dto';
+import { CreateBugDto, UpdateBugDto } from './dto/bug.dto';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
 
@@ -22,5 +22,17 @@ export class BugsController {
   @ApiOperation({ summary: 'Zoznam všetkých nahlásených bugov v projekte s kontextom krokov' })
   async findByProject(@Param('projectId') projectId: string) {
     return this.bugsService.findByProject(projectId);
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Aktualizácia stavu defektu (OPEN, IN_PROGRESS, RESOLVED, CLOSED) a Jira ticketu' })
+  async update(@Param('id') id: string, @Body() dto: UpdateBugDto) {
+    return this.bugsService.update(id, dto);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Vymazanie evidovaného defektu' })
+  async delete(@Param('id') id: string) {
+    return this.bugsService.delete(id);
   }
 }

@@ -14,9 +14,11 @@ import {
   Maximize2,
   FileText,
   ExternalLink,
+  Network,
 } from 'lucide-react';
 import { MediaViewerModal } from '@/components/ui/MediaViewerModal';
 import { MermaidDiagram } from './MermaidDiagram';
+import { resolveAttachmentUrl } from '@/lib/api';
 
 interface DocMarkdownRendererProps {
   content: string;
@@ -209,7 +211,8 @@ export function DocMarkdownRenderer({ content, onSelectTestCase }: DocMarkdownRe
     const videoMatch = line.trim().match(/^!video\[(.*?)\]\((.*?)\)$/i);
     if (videoMatch) {
       const title = videoMatch[1] || 'Video záznam';
-      const url = videoMatch[2];
+      const rawUrl = videoMatch[2];
+      const url = resolveAttachmentUrl(rawUrl);
       blocks.push(
         <div key={`video-${i}`} className="my-4 p-3 rounded-2xl border border-white/15 bg-zinc-950 shadow-xl space-y-2">
           <div className="flex items-center justify-between text-xs text-zinc-300 pb-1 border-b border-white/[0.06]">
@@ -243,7 +246,8 @@ export function DocMarkdownRenderer({ content, onSelectTestCase }: DocMarkdownRe
     const imgMatch = line.trim().match(/^!\[(.*?)\]\((.*?)\)$/);
     if (imgMatch) {
       const alt = imgMatch[1] || 'Obrázok';
-      const url = imgMatch[2];
+      const rawUrl = imgMatch[2];
+      const url = resolveAttachmentUrl(rawUrl);
       blocks.push(
         <div
           key={`img-${i}`}
@@ -255,10 +259,15 @@ export function DocMarkdownRenderer({ content, onSelectTestCase }: DocMarkdownRe
             alt={alt}
             className="w-full max-h-[480px] object-contain rounded-xl mx-auto"
             loading="lazy"
+            onError={(e) => {
+              // If failed, try loading fallback
+              const target = e.currentTarget;
+              target.onerror = null;
+            }}
           />
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-2xl">
             <span className="px-3 py-1.5 rounded-xl bg-blue-600/90 text-white text-xs font-semibold flex items-center gap-1.5 shadow-lg">
-              <Maximize2 className="w-3.5 h-3.5" /> Kliknite pre zväčšenie
+              <Maximize2 className="w-3.5 h-3.5" /> Kliknite pre priblíženie / zoom
             </span>
           </div>
           {alt && alt !== 'Obrázok' && (
@@ -363,6 +372,28 @@ export function DocMarkdownRenderer({ content, onSelectTestCase }: DocMarkdownRe
     // 11. Empty lines
     if (!line.trim()) {
       blocks.push(<div key={`blank-${i}`} className="h-2" />);
+      i++;
+      continue;
+    }
+
+    // 12. ASCII Flow / Architecture Diagram line: e.g. [POS / DOMS] ---> (IF_RITS) ---> [SSR Hub]
+    if (
+      line.includes('--->') ||
+      line.includes('<---') ||
+      line.includes('==>') ||
+      (line.includes('-->') && !line.includes('-->|')) ||
+      (line.trim().startsWith('`') && (line.includes('-->') || line.includes('--->')))
+    ) {
+      const cleanLine = line.replace(/^`\s*(ext|text)?\s*/i, '').replace(/`$/, '');
+      blocks.push(
+        <div
+          key={`diagram-flow-${i}`}
+          className="my-3 p-3.5 rounded-xl bg-blue-950/30 border border-blue-500/30 font-mono text-xs text-blue-200 overflow-x-auto shadow-inner flex items-center gap-2.5"
+        >
+          <Network className="w-4 h-4 text-blue-400 shrink-0" />
+          <div className="whitespace-pre flex-1">{renderInline(cleanLine)}</div>
+        </div>
+      );
       i++;
       continue;
     }

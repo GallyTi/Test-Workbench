@@ -59,6 +59,7 @@ export function DocEditor({
   const [showCalloutMenu, setShowCalloutMenu] = useState(false);
   const [showTcMenu, setShowTcMenu] = useState(false);
   const [showMermaidMenu, setShowMermaidMenu] = useState(false);
+  const [showTableMenu, setShowTableMenu] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -288,19 +289,66 @@ export function DocEditor({
 
           <div className="h-4 w-px bg-white/15 mx-1" />
 
-          {/* Tables */}
-          <button
-            type="button"
-            onClick={() =>
-              insertTextAtCursor(
-                '\n| Stĺpec 1 | Stĺpec 2 | Stĺpec 3 |\n| :--- | :--- | :--- |\n| Hodnota A | Hodnota B | Hodnota C |\n'
-              )
-            }
-            title="Vložiť tabuľku"
-            className="p-1.5 hover:bg-white/10 hover:text-white rounded-lg transition-colors"
-          >
-            <TableIcon className="w-4 h-4" />
-          </button>
+          {/* Tables Dropdown */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowTableMenu(!showTableMenu)}
+              title="Vložiť tabuľku"
+              className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 text-xs font-semibold ${
+                showTableMenu ? 'bg-blue-600/30 text-blue-300' : 'hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              <TableIcon className="w-4 h-4 text-emerald-400" />
+              <span className="hidden xl:inline text-[11px]">Tabuľka</span>
+            </button>
+
+            {showTableMenu && (
+              <div className="absolute left-0 top-full mt-2 w-64 bg-zinc-900 border border-white/20 rounded-xl shadow-2xl p-1.5 z-50 space-y-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    insertTextAtCursor(
+                      '\n| Stĺpec 1 | Stĺpec 2 | Stĺpec 3 |\n| :--- | :--- | :--- |\n| Hodnota A | Hodnota B | Hodnota C |\n| Hodnota D | Hodnota E | Hodnota F |\n'
+                    );
+                    setShowTableMenu(false);
+                  }}
+                  className="w-full p-2 hover:bg-emerald-500/20 text-emerald-200 text-xs rounded-lg text-left block"
+                >
+                  <span className="font-bold block">1. Štandardná tabuľka</span>
+                  <span className="text-[10px] text-zinc-400">Základná 3-stĺpcová tabuľka s hlavičkou</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    insertTextAtCursor(
+                      '\n| Systém / Komponent | Rozhranie (Interface) | Protokol / Formát | Popis payloadu |\n| :--- | :--- | :--- | :--- |\n| POS Pokladňa | IF_RITS_001 | REST / JSON | Predaj tovaru a čerpanie |\n| DOMS Controller | IF_RITS_009 | TCP Socket | Merania stavu nádrží |\n| SAP S/4HANA | IF_RITS_SAP | RFC / IDoc | Finančné zúčtovanie (WMMBID02) |\n'
+                    );
+                    setShowTableMenu(false);
+                  }}
+                  className="w-full p-2 hover:bg-emerald-500/20 text-emerald-200 text-xs rounded-lg text-left block"
+                >
+                  <span className="font-bold block">2. Tabuľka rozhraní (Interfaces)</span>
+                  <span className="text-[10px] text-zinc-400">Architektúra prepojení medzi systémami</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    insertTextAtCursor(
+                      '\n| Krok # | Akcia / Činnosť | Očakávaný výsledok | Skutočný výsledok | Stav |\n| :--- | :--- | :--- | :--- | :--- |\n| 1 | Spustenie čerpania na stojane #1 | Palivo vydané bez chyby | Vydané 42.50 L | PASSED |\n| 2 | Odoslanie transakcie do SSR | Kód 200 OK a vygenerované ID transakcie | 200 OK (ID 9841) | PASSED |\n| 3 | Overenie IDocu v SAP (WE02) | IDoc má status 53 (Úspešne zaúčtovaný) | Status 53 | PASSED |\n'
+                    );
+                    setShowTableMenu(false);
+                  }}
+                  className="w-full p-2 hover:bg-emerald-500/20 text-emerald-200 text-xs rounded-lg text-left block"
+                >
+                  <span className="font-bold block">3. Testovacia matica (Test Matrix)</span>
+                  <span className="text-[10px] text-zinc-400">Tabuľka krokov a overenia výsledkov</span>
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Callout Alert Dropdown */}
           <div className="relative">
@@ -373,11 +421,25 @@ export function DocEditor({
               }`}
             >
               <Network className="w-4 h-4 text-purple-400" />
-              <span className="hidden xl:inline text-[11px]">UML</span>
+              <span className="hidden xl:inline text-[11px]">Diagram</span>
             </button>
 
             {showMermaidMenu && (
-              <div className="absolute left-0 top-full mt-2 w-64 bg-zinc-900 border border-white/20 rounded-xl shadow-2xl p-1.5 z-50 space-y-1">
+              <div className="absolute left-0 top-full mt-2 w-72 bg-zinc-900 border border-white/20 rounded-xl shadow-2xl p-1.5 z-50 space-y-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    insertTextAtCursor(
+                      '\n```mermaid\ngraph LR\n    POS["POS / DOMS"] -->|IF_RITS_009| SSR["SSR Central Hub"]\n    SSR -->|IDoc / RFC| SAP["SAP ERP S/4HANA"]\n```\n'
+                    );
+                    setShowMermaidMenu(false);
+                  }}
+                  className="w-full p-2 hover:bg-purple-500/20 text-purple-200 text-xs rounded-lg text-left block"
+                >
+                  <span className="font-bold block">1. Architektonický tok (Komunikácia)</span>
+                  <span className="text-[10px] text-zinc-400">[POS] ➔ (IF_RITS_009) ➔ [SSR Hub] ➔ [SAP]</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => {
@@ -388,8 +450,8 @@ export function DocEditor({
                   }}
                   className="w-full p-2 hover:bg-purple-500/20 text-purple-200 text-xs rounded-lg text-left block"
                 >
-                  <span className="font-bold block">1. Sekvenčný Diagram (Sequence)</span>
-                  <span className="text-[10px] text-zinc-400">Komunikácia POS ➔ DOMS ➔ SSR ➔ SAP</span>
+                  <span className="font-bold block">2. Sekvenčný Diagram (Sequence)</span>
+                  <span className="text-[10px] text-zinc-400">Kroková komunikácia medzi systémami</span>
                 </button>
 
                 <button
@@ -402,7 +464,7 @@ export function DocEditor({
                   }}
                   className="w-full p-2 hover:bg-purple-500/20 text-purple-200 text-xs rounded-lg text-left block"
                 >
-                  <span className="font-bold block">2. Vývojový Diagram (Flowchart)</span>
+                  <span className="font-bold block">3. Vývojový Diagram (Flowchart)</span>
                   <span className="text-[10px] text-zinc-400">Rozhodovacie stromy a vetvenia procesov</span>
                 </button>
 
@@ -416,7 +478,7 @@ export function DocEditor({
                   }}
                   className="w-full p-2 hover:bg-purple-500/20 text-purple-200 text-xs rounded-lg text-left block"
                 >
-                  <span className="font-bold block">3. Stavový Automat (State Machine)</span>
+                  <span className="font-bold block">4. Stavový Automat (State Machine)</span>
                   <span className="text-[10px] text-zinc-400">Životný cyklus testu a prechody stavov</span>
                 </button>
               </div>

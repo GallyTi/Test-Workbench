@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAppStore } from '@/lib/store';
 import { Navbar } from './Navbar';
+import { Footer } from './Footer';
 import { ActiveTimerWidget } from './ActiveTimerWidget';
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -51,7 +52,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Authenticated: Render Navbar + expanded 75% width canvas + timer widget
+  // Authenticated: Render Navbar + expanded canvas + Footer + timer widget
   return (
     <>
       <div className="relative z-20 w-full">
@@ -61,6 +62,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       <main className="relative z-10 flex-1 w-full max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {children}
       </main>
+
+      <Footer />
 
       <div className="relative z-30">
         <ActiveTimerWidget />

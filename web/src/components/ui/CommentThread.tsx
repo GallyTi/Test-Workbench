@@ -261,6 +261,7 @@ export function CommentThread({
 
     if (imageFiles.length > 0) {
       e.preventDefault();
+      e.stopPropagation();
       await uploadPhotoFiles(imageFiles);
     }
   };
@@ -451,6 +452,7 @@ export function CommentThread({
         ) : (
           comments.map((c) => {
             const grouped = groupReactions(c.reactions);
+            const totalReactionsCount = c.reactions?.length || 0;
             const isHovered = activeHoverCommentId === c.id;
 
             const fullTimestamp = new Date(c.createdAt).toLocaleString('sk-SK', {
@@ -469,35 +471,43 @@ export function CommentThread({
                 onMouseLeave={() => setActiveHoverCommentId(null)}
                 className="group relative p-3.5 rounded-xl bg-zinc-950/80 hover:bg-zinc-900/90 border border-white/[0.08] hover:border-white/20 transition-all shadow-sm"
               >
-                {/* Discord-style Hover Quick Reaction Toolbar (Desktop) */}
+                {/* Desktop Quick Reaction Toolbar - Positioned inside top-right, never clipped by container overflow */}
                 <div
-                  className={`hidden sm:flex absolute -top-3.5 right-3 bg-zinc-900 border border-white/20 rounded-full px-2 py-0.5 items-center gap-1.5 shadow-xl shadow-black transition-all z-20 ${
+                  className={`hidden sm:flex absolute top-2 right-2 bg-zinc-900/95 backdrop-blur-md border border-white/25 rounded-full px-2 py-0.5 items-center gap-1 shadow-2xl shadow-black transition-all z-20 ${
                     isHovered ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'
                   }`}
                 >
-                  {POPULAR_REACTION_EMOJIS.slice(0, 5).map((emoji) => (
-                    <button
-                      key={emoji}
-                      onClick={() => handleToggleReaction(c.id, emoji)}
-                      title={`Reagovať ${emoji}`}
-                      className="hover:scale-130 transition-transform p-0.5 text-xs"
-                    >
-                      {emoji}
-                    </button>
-                  ))}
+                  {POPULAR_REACTION_EMOJIS.slice(0, 5).map((emoji) => {
+                    const match = grouped.find((g) => g.emoji === emoji);
+                    return (
+                      <button
+                        key={emoji}
+                        onClick={() => handleToggleReaction(c.id, emoji)}
+                        title={`Reagovať ${emoji}${match ? ` (${match.count}x)` : ''}`}
+                        className="hover:scale-125 transition-transform p-0.5 text-xs flex items-center gap-0.5 rounded hover:bg-white/10"
+                      >
+                        <span>{emoji}</span>
+                        {match && (
+                          <span className="text-[10px] font-mono font-bold text-blue-300">
+                            {match.count}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
 
                   <button
                     onClick={() => setReactingCommentId(reactingCommentId === c.id ? null : c.id)}
-                    className="text-zinc-400 hover:text-white p-0.5 text-xs border-l border-white/10 pl-1.5 flex items-center gap-0.5"
+                    className="text-zinc-400 hover:text-white p-0.5 text-xs border-l border-white/15 pl-1.5 flex items-center gap-0.5"
                     title="Vybrať akúkoľvek emoji reakciu"
                   >
-                    <Plus className="w-3 h-3" />
-                    <Smile className="w-3 h-3" />
+                    <Plus className="w-3 h-3 text-zinc-400" />
+                    <Smile className="w-3.5 h-3.5 text-amber-400" />
                   </button>
                 </div>
 
                 {/* Comment Author & Full Timestamp */}
-                <div className="flex flex-wrap items-center justify-between text-xs mb-1.5 pb-1 border-b border-white/[0.04] gap-1">
+                <div className="flex flex-wrap items-center justify-between text-xs mb-1.5 pb-1 border-b border-white/[0.04] gap-1 pr-1 sm:group-hover:pr-36 transition-all">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className="font-semibold text-white truncate">{c.author?.fullName}</span>
                     <span className="text-[10px] text-zinc-500 font-mono truncate">
@@ -525,14 +535,14 @@ export function CommentThread({
                   <MarkdownRenderer content={c.content} onPhotoClick={setSelectedLightboxPhoto} />
                 </div>
 
-                {/* Discord-style Reaction Badges */}
+                {/* Discord-style Reaction Badges with Counts */}
                 <div className="flex flex-wrap items-center gap-1.5 mt-2.5 pt-1 border-t border-white/[0.03]">
                   {grouped.map((grp) => (
                     <button
                       key={grp.emoji}
                       onClick={() => handleToggleReaction(c.id, grp.emoji)}
-                      title={grp.users.join(', ')}
-                      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-mono transition-all ${
+                      title={`${grp.users.join(', ')} (${grp.count}x)`}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-mono transition-all ${
                         grp.hasReacted
                           ? 'bg-blue-600/30 border border-blue-500/60 text-blue-200 shadow-sm shadow-blue-500/20'
                           : 'bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-zinc-300 hover:text-white'
@@ -543,13 +553,20 @@ export function CommentThread({
                     </button>
                   ))}
 
+                  {totalReactionsCount > 0 && (
+                    <span className="text-[10px] font-mono text-zinc-400 bg-white/[0.03] px-2 py-0.5 rounded-md border border-white/[0.05]">
+                      Celkovo: {totalReactionsCount} {totalReactionsCount === 1 ? 'reakcia' : totalReactionsCount < 5 ? 'reakcie' : 'reakcií'}
+                    </span>
+                  )}
+
                   {/* Add reaction plus button */}
                   <button
                     onClick={() => setReactingCommentId(c.id)}
-                    className="inline-flex items-center px-1.5 py-0.5 rounded-lg text-xs bg-white/[0.02] hover:bg-white/[0.08] border border-white/[0.06] text-zinc-400 hover:text-white transition-colors"
-                    title="Pridať reakciu"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.08] text-zinc-400 hover:text-white transition-colors"
+                    title="Pridať vlastnú reakciu"
                   >
                     <Plus className="w-3 h-3 text-zinc-400" />
+                    <Smile className="w-3 h-3 text-amber-400" />
                   </button>
                 </div>
               </div>

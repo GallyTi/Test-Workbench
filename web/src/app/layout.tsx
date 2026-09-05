@@ -5,6 +5,8 @@ import { ActiveTimerWidget } from '@/components/layout/ActiveTimerWidget';
 import { GalaxyBackground } from '@/components/ui/GalaxyBackground';
 import { AuthGuard } from '@/components/layout/AuthGuard';
 
+import { ThemeSync } from '@/components/layout/ThemeSync';
+
 export const metadata: Metadata = {
   title: 'RITS QA Workbench | Enterprise Test & Architecture Platform',
   description: 'Enterprise test management, real-time multi-user execution and knowledge graph platform.',
@@ -18,6 +20,7 @@ export default function RootLayout({
   return (
     <html lang="sk" className="dark h-full">
       <body className="min-h-full bg-black text-slate-100 font-sans antialiased selection:bg-white/20 selection:text-white flex flex-col relative">
+        <ThemeSync />
         {/* Simple reactive galaxy starry background */}
         <GalaxyBackground />
 
