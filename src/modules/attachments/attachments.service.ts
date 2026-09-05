@@ -11,12 +11,12 @@ export class AttachmentsService {
   ) {}
 
   async uploadAttachment(
-    targetType: 'STEP_EXECUTION' | 'TEST_CASE' | 'BUG',
+    targetType: string,
     targetId: string,
     file: Express.Multer.File,
     userId: string,
   ) {
-    const fileExt = file.originalname.split('.').pop();
+    const fileExt = file.originalname.split('.').pop() || 'png';
     const storageKey = `${targetType.toLowerCase()}/${targetId}/${randomUUID()}.${fileExt}`;
 
     await this.s3Service.uploadFile(storageKey, file.buffer, file.mimetype);
@@ -47,7 +47,7 @@ export class AttachmentsService {
       });
     }
 
-    const downloadUrl = await this.s3Service.getPresignedUrl(storageKey);
+    const downloadUrl = `/attachments/${attachment.id}/content`;
 
     return {
       id: attachment.id,
@@ -71,16 +71,31 @@ export class AttachmentsService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return Promise.all(
-      items.map(async (item) => ({
-        id: item.id,
-        fileName: item.fileName,
-        fileSizeBytes: Number(item.fileSizeBytes),
-        mimeType: item.mimeType,
-        downloadUrl: await this.s3Service.getPresignedUrl(item.storageKey),
-        uploadedBy: item.uploadedBy,
-        createdAt: item.createdAt,
-      })),
-    );
+    return items.map((item) => ({
+      id: item.id,
+      fileName: item.fileName,
+      fileSizeBytes: Number(item.fileSizeBytes),
+      mimeType: item.mimeType,
+      downloadUrl: `/attachments/${item.id}/content`,
+      uploadedBy: item.uploadedBy,
+      createdAt: item.createdAt,
+    }));
+  }
+
+  async getAttachmentFile(id: string) {
+    const attachment = await this.prisma.attachment.findUnique({
+      where: { id },
+    });
+    if (!attachment) return null;
+
+    const fileData = await this.s3Service.getFileStream(attachment.storageKey);
+    if (!fileData) return null;
+
+    return {
+      stream: fileData.stream,
+      mimeType: attachment.mimeType || fileData.mimeType || 'application/octet-stream',
+      size: Number(attachment.fileSizeBytes) || fileData.size,
+      fileName: attachment.fileName,
+    };
   }
 }

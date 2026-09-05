@@ -4,6 +4,7 @@ import { CreateTestCaseDto } from './dto/test-case.dto';
 import { StepStatusEnum, TestStatusEnum } from '@prisma/client';
 import { NotificationsService } from '../notifications/notifications.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
+import { S3StorageService } from '../attachments/s3-storage.service';
 
 @Injectable()
 export class TestCasesService {
@@ -11,6 +12,7 @@ export class TestCasesService {
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
     private readonly realtimeGateway: RealtimeGateway,
+    private readonly s3StorageService: S3StorageService,
   ) {}
 
   async findAll(projectId: string, filters?: { suiteId?: string; epicId?: string; tag?: string }) {
@@ -148,6 +150,10 @@ export class TestCasesService {
       actualResult?: string;
       assignedToId?: string;
       requiresProofPhoto?: boolean;
+      action?: string;
+      expectedResult?: string;
+      testData?: string;
+      stepNumber?: number;
     },
     userId: string,
   ) {
@@ -167,7 +173,7 @@ export class TestCasesService {
     if (isRequired && data.status === StepStatusEnum.PASSED) {
       const attachmentsCount = await this.prisma.attachment.count({
         where: {
-          targetType: { in: ['STEP_DIRECT', 'STEP_EXECUTION'] },
+          targetType: { in: ['STEP_DIRECT', 'STEP_EXECUTION', 'TEST_CASE_STEP'] },
           targetId: stepId,
         },
       });
@@ -188,6 +194,10 @@ export class TestCasesService {
         ...(data.actualResult !== undefined && { actualResult: data.actualResult }),
         ...(data.assignedToId !== undefined && { assignedToId: data.assignedToId || null }),
         ...(data.requiresProofPhoto !== undefined && { requiresProofPhoto: data.requiresProofPhoto }),
+        ...(data.action !== undefined && { action: data.action }),
+        ...(data.expectedResult !== undefined && { expectedResult: data.expectedResult }),
+        ...(data.testData !== undefined && { testData: data.testData }),
+        ...(data.stepNumber !== undefined && { stepNumber: data.stepNumber }),
       },
       include: {
         assignedTo: { select: { id: true, fullName: true, email: true } },
@@ -270,15 +280,74 @@ export class TestCasesService {
   async resetTestCase(id: string) {
     await this.findOne(id);
 
+    // 1. Nájdeme všetky kroky tohto testovacieho scenára
+    const steps = await this.prisma.testCaseStep.findMany({
+      where: { testCaseId: id },
+      select: { id: true },
+    });
+    const stepIds = steps.map((s) => s.id);
+
+    // 2. Nájdeme všetky exekúcie týchto krokov (ak existujú v testovacích behoch)
+    const stepExecs = await this.prisma.testStepExecution.findMany({
+      where: { testCaseStepId: { in: stepIds } },
+      select: { id: true },
+    });
+    const stepExecIds = stepExecs.map((se) => se.id);
+
+    // Zoznam všetkých ID naviazaných na tento test case alebo jeho kroky
+    const allTargetIds = [id, ...stepIds, ...stepExecIds];
+
+    // 3. Zmažeme všetky komentáre, zmienky a reakcie (onDelete: Cascade vymaže mentions & reactions)
+    await this.prisma.comment.deleteMany({
+      where: {
+        targetId: { in: allTargetIds },
+      },
+    });
+
+    // 4. Zmažeme všetky prílohy a dôkazové fotografie (fyzicky zo S3 / disku aj z databázy)
+    const attachments = await this.prisma.attachment.findMany({
+      where: {
+        targetId: { in: allTargetIds },
+      },
+    });
+
+    for (const att of attachments) {
+      if (att.storageKey) {
+        await this.s3StorageService.deleteFile(att.storageKey).catch(() => {});
+      }
+    }
+
+    await this.prisma.attachment.deleteMany({
+      where: {
+        targetId: { in: allTargetIds },
+      },
+    });
+
+    // 5. Zresetujeme stav krokov scenára na UNTESTED a vymažeme skutočné výsledky
     await this.prisma.testCaseStep.updateMany({
       where: { testCaseId: id },
       data: {
         status: StepStatusEnum.UNTESTED,
         actualResult: null,
         executedById: null,
+        durationSecs: 0,
       },
     });
 
+    // 6. Ak existujú exekúcie v testovacích behoch, vyčistíme aj tie
+    if (stepExecIds.length > 0) {
+      await this.prisma.testStepExecution.updateMany({
+        where: { id: { in: stepExecIds } },
+        data: {
+          status: StepStatusEnum.UNTESTED,
+          actualResult: null,
+          executedById: null,
+          durationSecs: 0,
+        },
+      });
+    }
+
+    // 7. Zresetujeme metadata testovacieho scenára
     await this.prisma.testCase.update({
       where: { id },
       data: {
@@ -288,11 +357,87 @@ export class TestCasesService {
       },
     });
 
+    // 8. Odošleme WebSocket eventy pre okamžitú aktualizáciu klientov
     this.realtimeGateway.server.emit('step_updated', {
+      testCaseId: id,
+    });
+    this.realtimeGateway.server.emit('test_case_reset', {
       testCaseId: id,
     });
 
     return this.findOne(id);
+  }
+
+  async addStep(
+    testCaseId: string,
+    data: {
+      action: string;
+      expectedResult: string;
+      testData?: string;
+      stepNumber?: number;
+      assignedToId?: string;
+      requiresProofPhoto?: boolean;
+    },
+    userId: string,
+  ) {
+    const testCase = await this.prisma.testCase.findUnique({
+      where: { id: testCaseId },
+      include: { steps: { select: { stepNumber: true } } },
+    });
+
+    if (!testCase) {
+      throw new NotFoundException('Testovací scenár nebol nájdený');
+    }
+
+    let nextStepNum = data.stepNumber;
+    if (!nextStepNum) {
+      const maxNum = testCase.steps.reduce((max, s) => Math.max(max, s.stepNumber), 0);
+      nextStepNum = maxNum + 1;
+    }
+
+    const createdStep = await this.prisma.testCaseStep.create({
+      data: {
+        testCaseId,
+        stepNumber: nextStepNum,
+        action: data.action,
+        expectedResult: data.expectedResult,
+        testData: data.testData || null,
+        assignedToId: data.assignedToId || null,
+        requiresProofPhoto: !!data.requiresProofPhoto,
+        status: StepStatusEnum.UNTESTED,
+      },
+      include: {
+        assignedTo: { select: { id: true, fullName: true, email: true } },
+        executedBy: { select: { id: true, fullName: true, email: true } },
+      },
+    });
+
+    this.realtimeGateway.server.emit('step_updated', {
+      stepId: createdStep.id,
+      testCaseId,
+    });
+
+    return createdStep;
+  }
+
+  async deleteStep(stepId: string, userId: string) {
+    const step = await this.prisma.testCaseStep.findUnique({
+      where: { id: stepId },
+    });
+    if (!step) {
+      throw new NotFoundException('Testovací krok nebol nájdený');
+    }
+
+    await this.prisma.testCaseStep.delete({
+      where: { id: stepId },
+    });
+
+    this.realtimeGateway.server.emit('step_updated', {
+      stepId,
+      testCaseId: step.testCaseId,
+    });
+
+    return { success: true };
   }
 
   async delete(id: string) {

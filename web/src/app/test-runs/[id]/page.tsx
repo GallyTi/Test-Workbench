@@ -28,12 +28,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { CommentThread } from '@/components/ui/CommentThread';
+import { MediaViewerModal } from '@/components/ui/MediaViewerModal';
+import { resolveAttachmentUrl } from '@/lib/api';
 
 export default function TestExecutionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: testRunId } = use(params);
   const { user, activeTimer, setActiveTimer } = useAppStore();
   const [run, setRun] = useState<any>(null);
   const [selectedStep, setSelectedStep] = useState<any>(null);
+  const [selectedMedia, setSelectedMedia] = useState<any>(null);
   const [activeLocks, setActiveLocks] = useState<Record<string, { userId: string; userName: string }>>({});
   const [comments, setComments] = useState<any[]>([]);
   const [attachments, setAttachments] = useState<any[]>([]);
@@ -637,20 +640,43 @@ export default function TestExecutionPage({ params }: { params: Promise<{ id: st
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                  {attachments.map((att) => (
-                    <a
-                      key={att.id}
-                      href={att.downloadUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.05] flex flex-col items-center text-center text-xs transition-colors"
-                    >
-                      <ImageIcon className="w-5 h-5 text-zinc-400 mb-1" />
-                      <span className="line-clamp-1 text-[10px] text-zinc-300 font-mono">
-                        {att.fileName}
-                      </span>
-                    </a>
-                  ))}
+                  {attachments.map((att) => {
+                    const isVid =
+                      att.mimeType?.startsWith('video/') ||
+                      /\.(mp4|webm|ogg|mov|mkv|avi)$/i.test(att.fileName);
+                    const isImg =
+                      att.mimeType?.startsWith('image/') ||
+                      /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(att.fileName);
+
+                    return (
+                      <div
+                        key={att.id}
+                        onClick={() => setSelectedMedia(att)}
+                        className="group relative p-2 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 border border-white/10 hover:border-blue-500/50 cursor-pointer transition-all shadow-md overflow-hidden flex flex-col items-center text-center"
+                      >
+                        <div className="w-full h-20 bg-black/40 rounded-lg overflow-hidden flex items-center justify-center mb-1.5 relative">
+                          {isImg ? (
+                            <img
+                              src={resolveAttachmentUrl(att)}
+                              alt={att.fileName}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                              onError={(e) => {
+                                (e.target as HTMLElement).style.opacity = '0.4';
+                              }}
+                            />
+                          ) : (
+                            <div className="flex flex-col items-center justify-center text-zinc-400">
+                              <ImageIcon className="w-6 h-6 mb-1 text-blue-400" />
+                              <span className="text-[9px] font-mono">{isVid ? 'VIDEO' : 'SÚBOR'}</span>
+                            </div>
+                          )}
+                        </div>
+                        <span className="truncate text-[10px] text-zinc-300 font-mono w-full">
+                          {att.fileName}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -738,6 +764,13 @@ export default function TestExecutionPage({ params }: { params: Promise<{ id: st
           </Card>
         </div>
       )}
+
+      {/* Lightbox / Media Viewer Modal */}
+      <MediaViewerModal
+        isOpen={!!selectedMedia}
+        attachment={selectedMedia}
+        onClose={() => setSelectedMedia(null)}
+      />
     </div>
   );
 }

@@ -7,6 +7,39 @@ export const getApiBaseUrl = () => {
   return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 };
 
+export const resolveAttachmentUrl = (att: any): string => {
+  if (!att) return '';
+  const baseUrl = getApiBaseUrl();
+
+  // If passed an object with id
+  if (typeof att === 'object') {
+    if (att.id) {
+      return `${baseUrl}/attachments/${att.id}/content`;
+    }
+    att = att.downloadUrl || '';
+  }
+
+  if (typeof att !== 'string' || !att) return '';
+
+  // If points to localhost:9000 or minio:9000
+  if (att.includes(':9000/') || att.includes('minio:')) {
+    try {
+      const parsed = new URL(att);
+      const baseParsed = new URL(baseUrl);
+      parsed.hostname = baseParsed.hostname;
+      return parsed.toString();
+    } catch {
+      return att;
+    }
+  }
+
+  if (att.startsWith('/')) {
+    return `${baseUrl}${att}`;
+  }
+
+  return att;
+};
+
 export const api = axios.create({
   baseURL: typeof window !== 'undefined' ? `http://${window.location.hostname}:4000` : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'),
   headers: {

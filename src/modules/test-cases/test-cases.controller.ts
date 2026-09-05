@@ -55,7 +55,7 @@ export class TestCasesController {
   }
 
   @Patch('steps/:stepId')
-  @ApiOperation({ summary: 'Priama úprava stavu, výsledku alebo priradenia testovacieho kroku' })
+  @ApiOperation({ summary: 'Priama úprava stavu, akcie, výsledku, vstupných dát alebo priradenia testovacieho kroku' })
   async updateStep(
     @Param('stepId') stepId: string,
     @Body()
@@ -63,10 +63,42 @@ export class TestCasesController {
       status?: StepStatusEnum;
       actualResult?: string;
       assignedToId?: string;
+      requiresProofPhoto?: boolean;
+      action?: string;
+      expectedResult?: string;
+      testData?: string;
+      stepNumber?: number;
     },
     @CurrentUser('id') userId: string,
   ) {
     return this.testCasesService.updateStep(stepId, body, userId);
+  }
+
+  @Post(':id/steps')
+  @ApiOperation({ summary: 'Pridanie nového testovacieho kroku s akciou, činnosťou a vstupnými dátami' })
+  async addStep(
+    @Param('id') testCaseId: string,
+    @Body()
+    body: {
+      action: string;
+      expectedResult: string;
+      testData?: string;
+      stepNumber?: number;
+      assignedToId?: string;
+      requiresProofPhoto?: boolean;
+    },
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.testCasesService.addStep(testCaseId, body, userId);
+  }
+
+  @Delete('steps/:stepId')
+  @ApiOperation({ summary: 'Zmazanie testovacieho kroku zo scenára' })
+  async deleteStep(
+    @Param('stepId') stepId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.testCasesService.deleteStep(stepId, userId);
   }
 
   @Post(':id/relationships')

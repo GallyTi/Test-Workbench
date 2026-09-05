@@ -1,15 +1,15 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { X, Download, ZoomIn, Calendar, HardDrive } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import React, { useEffect, useState } from 'react';
+import { X, Download, ZoomIn, Calendar, HardDrive, AlertCircle } from 'lucide-react';
+import { resolveAttachmentUrl } from '@/lib/api';
 
 interface PhotoViewerModalProps {
   isOpen: boolean;
   attachment: {
-    id: string;
-    fileName: string;
-    downloadUrl: string;
+    id?: string;
+    fileName?: string;
+    downloadUrl?: string;
     fileSizeBytes?: number | string;
     createdAt?: string;
   } | null;
@@ -17,6 +17,12 @@ interface PhotoViewerModalProps {
 }
 
 export function PhotoViewerModal({ isOpen, attachment, onClose }: PhotoViewerModalProps) {
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [attachment]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -28,6 +34,9 @@ export function PhotoViewerModal({ isOpen, attachment, onClose }: PhotoViewerMod
   }, [isOpen, onClose]);
 
   if (!isOpen || !attachment) return null;
+
+  const mediaUrl = resolveAttachmentUrl(attachment);
+  const fileName = attachment.fileName || 'fotografia.png';
 
   const formatFileSize = (bytes?: number | string) => {
     if (!bytes) return 'Neznáma veľkosť';
@@ -49,19 +58,19 @@ export function PhotoViewerModal({ isOpen, attachment, onClose }: PhotoViewerMod
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200"
       onClick={onClose}
     >
       {/* Top Controls Bar */}
       <div
-        className="w-full max-w-5xl flex items-center justify-between pb-3 text-white"
+        className="w-full max-w-5xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 text-white"
         onClick={(e) => e.stopPropagation()}
       >
-        <div>
-          <h3 className="font-semibold text-sm font-mono text-white truncate max-w-md">
-            {attachment.fileName}
+        <div className="min-w-0 flex-1">
+          <h3 className="font-semibold text-xs sm:text-sm font-mono text-white truncate">
+            {fileName}
           </h3>
-          <div className="flex items-center gap-3 text-[11px] text-zinc-400 font-mono mt-0.5">
+          <div className="flex flex-wrap items-center gap-2.5 text-[10px] sm:text-[11px] text-zinc-400 font-mono mt-0.5">
             {formattedDate && (
               <span className="flex items-center gap-1">
                 <Calendar className="w-3 h-3 text-zinc-500" /> {formattedDate}
@@ -73,21 +82,21 @@ export function PhotoViewerModal({ isOpen, attachment, onClose }: PhotoViewerMod
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Download Original Full-Size Button */}
+        <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
           <a
-            href={attachment.downloadUrl}
-            download={attachment.fileName}
+            href={mediaUrl}
+            download={fileName}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-lg shadow-blue-600/30 transition-all"
           >
-            <Download className="w-3.5 h-3.5" /> Stiahnuť Plnú Veľkosť
+            <Download className="w-3.5 h-3.5" /> Stiahnuť originál
           </a>
 
           <button
+            type="button"
             onClick={onClose}
-            className="p-1.5 bg-white/10 hover:bg-white/20 rounded-xl text-zinc-300 hover:text-white transition-colors ml-2"
+            className="p-1.5 bg-white/10 hover:bg-white/20 rounded-xl text-zinc-300 hover:text-white transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -96,14 +105,30 @@ export function PhotoViewerModal({ isOpen, attachment, onClose }: PhotoViewerMod
 
       {/* Main Image View */}
       <div
-        className="relative max-w-5xl max-h-[82vh] overflow-auto flex items-center justify-center p-2 rounded-2xl bg-zinc-950/60 border border-white/10 shadow-2xl"
+        className="relative max-w-5xl w-full max-h-[78vh] sm:max-h-[82vh] overflow-auto flex items-center justify-center p-2 rounded-2xl bg-zinc-950/80 border border-white/10 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <img
-          src={attachment.downloadUrl}
-          alt={attachment.fileName}
-          className="max-h-[78vh] w-auto object-contain rounded-lg"
-        />
+        {imgError ? (
+          <div className="p-8 text-center space-y-3">
+            <AlertCircle className="w-10 h-10 text-amber-400 mx-auto" />
+            <p className="text-xs text-zinc-300">Fotografiu sa nepodarilo načítať priamo v prehliadači.</p>
+            <a
+              href={mediaUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-xl text-xs text-blue-400 underline font-mono"
+            >
+              Otvoriť súbor v novom okne
+            </a>
+          </div>
+        ) : (
+          <img
+            src={mediaUrl}
+            alt={fileName}
+            onError={() => setImgError(true)}
+            className="max-h-[72vh] sm:max-h-[78vh] w-auto max-w-full object-contain rounded-lg shadow-lg"
+          />
+        )}
       </div>
     </div>
   );

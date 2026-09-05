@@ -30,6 +30,9 @@ import {
   Calendar,
   Layers,
   Sparkles,
+  Edit3,
+  Save,
+  AlertCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -38,19 +41,35 @@ import { Input } from '@/components/ui/input';
 import { CommentThread } from '@/components/ui/CommentThread';
 import { MediaViewerModal } from '@/components/ui/MediaViewerModal';
 import { Film } from 'lucide-react';
+import { resolveAttachmentUrl } from '@/lib/api';
 
 export default function TestCaseDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: testCaseId } = use(params);
   const router = useRouter();
   const { user, activeProject } = useAppStore();
 
-  const [testCase, setTestCase] = useState<any>(null);
+  const [testCase, setTestCase] = useState<any | null>(null);
   const [projectUsers, setProjectUsers] = useState<any[]>([]);
   const [allTestCases, setAllTestCases] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Expanded steps map (which steps are accordion opened)
   const [expandedSteps, setExpandedSteps] = useState<Record<string, boolean>>({});
+
+  // Step adding & editing states
+  const [showAddStepModal, setShowAddStepModal] = useState(false);
+  const [newStepAction, setNewStepAction] = useState('');
+  const [newStepExpected, setNewStepExpected] = useState('');
+  const [newStepInputData, setNewStepInputData] = useState('');
+  const [newStepRequiresPhoto, setNewStepRequiresPhoto] = useState(false);
+  const [newStepAssignee, setNewStepAssignee] = useState('');
+  const [savingNewStep, setSavingNewStep] = useState(false);
+
+  const [editingStepId, setEditingStepId] = useState<string | null>(null);
+  const [editStepAction, setEditStepAction] = useState('');
+  const [editStepExpected, setEditStepExpected] = useState('');
+  const [editStepInputData, setEditStepInputData] = useState('');
+  const [savingStepEdit, setSavingStepEdit] = useState(false);
 
   // Cross-connection modal
   const [showLinkModal, setShowLinkModal] = useState(false);
@@ -122,8 +141,17 @@ export default function TestCaseDetailPage({ params }: { params: Promise<{ id: s
       }
     });
 
+    socket.on('test_case_reset', (data: any) => {
+      if (data.testCaseId === testCaseId) {
+        setStepComments({});
+        setStepAttachments({});
+        fetchTestCase();
+      }
+    });
+
     return () => {
       socket.off('step_updated');
+      socket.off('test_case_reset');
     };
   }, [testCaseId, activeProject]);
 
@@ -217,6 +245,82 @@ export default function TestCaseDetailPage({ params }: { params: Promise<{ id: s
     return () => window.removeEventListener('paste', handlePaste);
   }, [expandedSteps]);
 
+  const handleAddStep = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newStepAction.trim()) {
+      alert('Zadajte akciu / činnosť kroku.');
+      return;
+    }
+    setSavingNewStep(true);
+    try {
+      const payload: any = {
+        action: newStepAction.trim(),
+        expectedResult: newStepExpected.trim() || 'Úspešné vykonanie bez chýb',
+        requiresProofPhoto: newStepRequiresPhoto,
+        assignedToId: newStepAssignee || undefined,
+      };
+      if (newStepInputData.trim()) {
+        payload.testData = JSON.stringify({ inputData: newStepInputData.trim() });
+      }
+      await api.post(`/projects/${activeProject?.id || 'RITS'}/test-cases/${testCaseId}/steps`, payload);
+      setShowAddStepModal(false);
+      setNewStepAction('');
+      setNewStepExpected('');
+      setNewStepInputData('');
+      setNewStepRequiresPhoto(false);
+      setNewStepAssignee('');
+      await fetchTestCase();
+    } catch (err: any) {
+      alert(err.message || 'Nepodarilo sa pridať krok');
+    } finally {
+      setSavingNewStep(false);
+    }
+  };
+
+  const startEditingStep = (step: any, extra?: any) => {
+    setEditingStepId(step.id);
+    setEditStepAction(step.action || '');
+    setEditStepExpected(step.expectedResult || '');
+    setEditStepInputData(extra?.inputData || step.testData || '');
+  };
+
+  const handleSaveStepEdit = async (stepId: string) => {
+    if (!editStepAction.trim()) {
+      alert('Akcia / činnosť nesmie byť prázdna.');
+      return;
+    }
+    setSavingStepEdit(true);
+    try {
+      const payload: any = {
+        action: editStepAction.trim(),
+        expectedResult: editStepExpected.trim(),
+      };
+      if (editStepInputData.trim()) {
+        payload.testData = JSON.stringify({ inputData: editStepInputData.trim() });
+      } else {
+        payload.testData = null;
+      }
+      await api.patch(`/projects/${activeProject?.id || 'RITS'}/test-cases/steps/${stepId}`, payload);
+      setEditingStepId(null);
+      await fetchTestCase();
+    } catch (err: any) {
+      alert(err.message || 'Nepodarilo sa uložiť zmeny kroku');
+    } finally {
+      setSavingStepEdit(false);
+    }
+  };
+
+  const handleDeleteStep = async (stepId: string, stepNumber?: number) => {
+    const label = stepNumber !== undefined ? `krok #${stepNumber}` : 'tento krok';
+    if (!confirm(`Naozaj chcete zmazať ${label}? Táto akcia je nevratná.`)) return;
+    try {
+      await api.delete(`/projects/${activeProject?.id || 'RITS'}/test-cases/steps/${stepId}`);
+      await fetchTestCase();
+    } catch (err: any) {
+      alert(err.message || 'Nepodarilo sa zmazať krok');
+    }
+  };
+
   const handleUpdateStep = async (
     stepId: string,
     updates: { status?: string; actualResult?: string; assignedToId?: string; requiresProofPhoto?: boolean }
@@ -272,6 +376,8 @@ export default function TestCaseDetailPage({ params }: { params: Promise<{ id: s
     try {
       await api.post(`/projects/${activeProject?.id || 'RITS'}/test-cases/${testCaseId}/reset`);
       setShowResetModal(false);
+      setStepComments({});
+      setStepAttachments({});
       await fetchTestCase();
     } catch (err: any) {
       alert(err.message || 'Chyba resetovania scenára');
@@ -507,12 +613,21 @@ export default function TestCaseDetailPage({ params }: { params: Promise<{ id: s
           <span className="text-sm font-bold text-white tracking-wide">
             Testovacie Kroky ({totalCount})
           </span>
-          <span className="text-xs text-zinc-400">
+          <span className="text-xs text-zinc-400 hidden sm:inline">
             • Kliknutím na riadok krok otvoríte alebo zatvoríte
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            size="sm"
+            variant="default"
+            onClick={() => setShowAddStepModal(true)}
+            className="h-7 text-xs px-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold flex items-center gap-1.5 shadow-md shadow-blue-600/25"
+          >
+            <Plus className="w-3.5 h-3.5" /> Pridať Krok
+          </Button>
+
           <Button
             size="sm"
             variant="outline"
@@ -746,48 +861,141 @@ export default function TestCaseDetailPage({ params }: { params: Promise<{ id: s
                     )}
                   </div>
 
-                  {/* Action & Expected Result Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.08]">
-                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
-                        Akcia / Činnosť
-                      </span>
-                      <p className="text-xs text-zinc-100 font-medium leading-relaxed whitespace-pre-wrap">
-                        {step.action}
-                      </p>
-                    </div>
-
-                    <div className="p-3.5 rounded-xl bg-emerald-500/[0.04] border border-emerald-500/30">
-                      <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block mb-1">
-                        Očakávaný Výsledok
-                      </span>
-                      <p className="text-xs text-emerald-200 font-medium leading-relaxed whitespace-pre-wrap">
-                        {step.expectedResult}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Enterprise Payload & Document Number */}
-                  {extra && (
-                    <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] text-xs grid grid-cols-1 sm:grid-cols-3 gap-2">
-                      {extra.executedBy && (
-                        <div>
-                          <span className="text-zinc-500 text-[10px] block">Vykonávateľ:</span>
-                          <span className="text-zinc-300 font-medium">{extra.executedBy}</span>
+                  {/* Step Action, Expected Result & Input Data (Edit or View Mode) */}
+                  {editingStepId === step.id ? (
+                    <div className="p-4 rounded-xl bg-blue-950/20 border border-blue-500/30 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-blue-400 flex items-center gap-1.5">
+                          <Edit3 className="w-4 h-4" /> Úprava Testovacieho Kroku č. {step.stepNumber}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setEditingStepId(null)}
+                            className="h-7 px-2.5 text-xs text-zinc-400 hover:text-white"
+                          >
+                            Zrušiť
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="default"
+                            onClick={() => handleSaveStepEdit(step.id)}
+                            className="h-7 px-3 text-xs bg-blue-600 hover:bg-blue-500 font-semibold flex items-center gap-1"
+                          >
+                            <Save className="w-3.5 h-3.5" /> Uložiť Krok
+                          </Button>
                         </div>
-                      )}
-                      {extra.documentNumber && (
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
-                          <span className="text-zinc-500 text-[10px] block">Číslo dokladu:</span>
-                          <span className="font-mono text-blue-400 font-semibold">{extra.documentNumber}</span>
+                          <label className="text-[11px] font-bold text-zinc-300 uppercase tracking-wider block mb-1">
+                            Akcia / Činnosť *
+                          </label>
+                          <textarea
+                            value={editStepAction}
+                            onChange={(e) => setEditStepAction(e.target.value)}
+                            rows={3}
+                            className="w-full bg-zinc-900 border border-white/20 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                            placeholder="Zadajte akciu alebo činnosť..."
+                          />
                         </div>
-                      )}
-                      {extra.inputData && (
-                        <div className="sm:col-span-3">
-                          <span className="text-zinc-500 text-[10px] block">Vstupné dáta (Payload):</span>
-                          <pre className="font-mono text-[11px] text-zinc-300 bg-black/60 p-2 rounded-lg mt-1 overflow-x-auto whitespace-pre-wrap">
-                            {extra.inputData}
-                          </pre>
+                        <div>
+                          <label className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block mb-1">
+                            Očakávaný Výsledok *
+                          </label>
+                          <textarea
+                            value={editStepExpected}
+                            onChange={(e) => setEditStepExpected(e.target.value)}
+                            rows={3}
+                            className="w-full bg-zinc-900 border border-white/20 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                            placeholder="Zadajte očakávaný výsledok..."
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
+                          Vstupné dáta (Payload / Parametre)
+                        </label>
+                        <textarea
+                          value={editStepInputData}
+                          onChange={(e) => setEditStepInputData(e.target.value)}
+                          rows={2}
+                          className="w-full bg-zinc-950 font-mono border border-white/20 rounded-xl p-2.5 text-xs text-zinc-200 focus:outline-none focus:border-blue-500"
+                          placeholder='Napr. { "user": "test", "action": "login" } alebo akékoľvek vstupné dáta...'
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-semibold text-zinc-400">Podrobnosti kroku:</span>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => startEditingStep(step, extra)}
+                            className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white/[0.05] hover:bg-white/10 text-zinc-300 hover:text-white border border-white/[0.08] flex items-center gap-1 transition-all"
+                            title="Upraviť akciu, očakávaný výsledok alebo vstupné dáta"
+                          >
+                            <Edit3 className="w-3.5 h-3.5 text-blue-400" /> Upraviť
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteStep(step.id, step.stepNumber)}
+                            className="px-2 py-1 rounded-lg text-xs font-semibold bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 flex items-center gap-1 transition-all"
+                            title="Zmazať tento testovací krok"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Action & Expected Result Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.08]">
+                          <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
+                            Akcia / Činnosť
+                          </span>
+                          <p className="text-xs text-zinc-100 font-medium leading-relaxed whitespace-pre-wrap">
+                            {step.action}
+                          </p>
+                        </div>
+
+                        <div className="p-3.5 rounded-xl bg-emerald-500/[0.04] border border-emerald-500/30">
+                          <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block mb-1">
+                            Očakávaný Výsledok
+                          </span>
+                          <p className="text-xs text-emerald-200 font-medium leading-relaxed whitespace-pre-wrap">
+                            {step.expectedResult}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Enterprise Payload & Document Number */}
+                      {extra && (
+                        <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] text-xs grid grid-cols-1 sm:grid-cols-3 gap-2">
+                          {extra.executedBy && (
+                            <div>
+                              <span className="text-zinc-500 text-[10px] block">Vykonávateľ:</span>
+                              <span className="text-zinc-300 font-medium">{extra.executedBy}</span>
+                            </div>
+                          )}
+                          {extra.documentNumber && (
+                            <div>
+                              <span className="text-zinc-500 text-[10px] block">Číslo dokladu:</span>
+                              <span className="font-mono text-blue-400 font-semibold">{extra.documentNumber}</span>
+                            </div>
+                          )}
+                          {extra.inputData && (
+                            <div className="sm:col-span-3">
+                              <span className="text-zinc-500 text-[10px] block">Vstupné dáta (Payload):</span>
+                              <pre className="font-mono text-[11px] text-zinc-300 bg-black/60 p-2 rounded-lg mt-1 overflow-x-auto whitespace-pre-wrap">
+                                {extra.inputData}
+                              </pre>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -798,7 +1006,7 @@ export default function TestCaseDetailPage({ params }: { params: Promise<{ id: s
                     <label className="block text-[11px] font-semibold text-zinc-300 mb-1">
                       Reálna odpoveď testera / Overený výsledok:
                     </label>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                       <Input
                         type="text"
                         defaultValue={step.actualResult || ''}
@@ -854,9 +1062,12 @@ export default function TestCaseDetailPage({ params }: { params: Promise<{ id: s
                                   </div>
                                 ) : (
                                   <img
-                                    src={att.downloadUrl}
+                                    src={resolveAttachmentUrl(att)}
                                     alt={att.fileName}
                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                    onError={(e) => {
+                                      (e.target as HTMLElement).style.opacity = '0.4';
+                                    }}
                                   />
                                 )}
                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
@@ -959,8 +1170,9 @@ export default function TestCaseDetailPage({ params }: { params: Promise<{ id: s
 
             <p className="text-xs text-zinc-300 leading-relaxed">
               Naozaj si prajete resetovať všetky kroky tohto scenára na stav{' '}
-              <strong className="text-white font-mono">UNTESTED</strong>? Všetky reálne odpovede a
-              priradené stavy budú vyčistené, aby ste mohli spustiť nový testovací cyklus.
+              <strong className="text-white font-mono">UNTESTED</strong>? Všetky reálne odpovede,
+              priradené stavy, ako aj celá konverzácia (komentáre) a nahrané fotografie budú kompletne
+              zresetované a vyčistené, aby ste mohli spustiť nový testovací cyklus.
             </p>
 
             <div className="flex justify-end gap-2 pt-2 border-t border-white/[0.08]">
@@ -984,6 +1196,112 @@ export default function TestCaseDetailPage({ params }: { params: Promise<{ id: s
           </Card>
         </div>
       )}
+
+      {/* Modal: Pridať Nový Testovací Krok & Vstupné Dáta */}
+      {showAddStepModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <Card variant="glass" className="w-full max-w-lg p-6 shadow-2xl space-y-4 bg-zinc-950 border-white/20">
+            <div className="flex items-center justify-between pb-2 border-b border-white/[0.08]">
+              <h2 className="text-base font-semibold text-white flex items-center gap-2">
+                <Plus className="w-4 h-4 text-blue-400" /> Pridať Nový Krok & Vstupné Dáta
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowAddStepModal(false)}
+                className="text-zinc-400 hover:text-white text-xs px-2 py-1 rounded-lg hover:bg-white/10"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleAddStep} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-zinc-200 mb-1">
+                  Akcia / Činnosť <span className="text-rose-400">*</span>
+                </label>
+                <textarea
+                  value={newStepAction}
+                  onChange={(e) => setNewStepAction(e.target.value)}
+                  required
+                  rows={3}
+                  placeholder="Popíšte akciu alebo činnosť, ktorú má tester vykonať..."
+                  className="w-full bg-zinc-900 border border-white/20 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-emerald-400 mb-1">
+                  Očakávaný Výsledok <span className="text-rose-400">*</span>
+                </label>
+                <textarea
+                  value={newStepExpected}
+                  onChange={(e) => setNewStepExpected(e.target.value)}
+                  required
+                  rows={3}
+                  placeholder="Čo je očakávaným výsledkom po vykonaní tejto akcie?"
+                  className="w-full bg-zinc-900 border border-white/20 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                  Vstupné dáta (Payload, Parametre, Čísla dokladov)
+                </label>
+                <textarea
+                  value={newStepInputData}
+                  onChange={(e) => setNewStepInputData(e.target.value)}
+                  rows={2}
+                  placeholder='Napr. { "account": "12345678", "amount": 50 } alebo vstupné hodnoty'
+                  className="w-full bg-zinc-900 font-mono border border-white/20 rounded-xl p-3 text-xs text-zinc-200 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                    Priradiť testerovi
+                  </label>
+                  <select
+                    value={newStepAssignee}
+                    onChange={(e) => setNewStepAssignee(e.target.value)}
+                    className="w-full bg-zinc-900 border border-white/20 rounded-xl px-3 h-10 text-xs text-white focus:outline-none"
+                  >
+                    <option value="">-- Nepriradené --</option>
+                    {projectUsers.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.fullName} ({u.role})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-2 pt-6">
+                  <input
+                    type="checkbox"
+                    id="newStepRequiresPhoto"
+                    checked={newStepRequiresPhoto}
+                    onChange={(e) => setNewStepRequiresPhoto(e.target.checked)}
+                    className="w-4 h-4 rounded bg-zinc-900 border-white/20 text-blue-600 focus:ring-0"
+                  />
+                  <label htmlFor="newStepRequiresPhoto" className="text-xs text-zinc-200 cursor-pointer select-none">
+                    Vyžadovať povinnú fotku
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-white/[0.08]">
+                <Button type="button" variant="ghost" onClick={() => setShowAddStepModal(false)}>
+                  Zrušiť
+                </Button>
+                <Button type="submit" variant="default" className="bg-blue-600 hover:bg-blue-500">
+                  Pridať Krok
+                </Button>
+              </div>
+            </form>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
+
