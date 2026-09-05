@@ -47,7 +47,13 @@ export default function TestExecutionPage({ params }: { params: Promise<{ id: st
   const [bugDesc, setBugDesc] = useState('');
   const [bugSeverity, setBugSeverity] = useState('MAJOR');
   const [loading, setLoading] = useState(false);
+  const [toastNotification, setToastNotification] = useState<{ message: string; type?: 'success' | 'info' | 'error' } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const showToast = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
+    setToastNotification({ message, type });
+    setTimeout(() => setToastNotification(null), 4000);
+  };
 
   const fetchRun = async () => {
     try {
@@ -98,34 +104,39 @@ export default function TestExecutionPage({ params }: { params: Promise<{ id: st
   useEffect(() => {
     const handlePaste = async (e: ClipboardEvent) => {
       const target = e.target as HTMLElement | null;
-      if (
-        target?.tagName === 'INPUT' ||
-        target?.tagName === 'TEXTAREA' ||
-        target?.isContentEditable
-      ) {
+      if (target?.closest?.('.comment-thread-editor') || target?.tagName === 'TEXTAREA') {
         return;
       }
 
       if (!selectedStep || !user) return;
       const items = e.clipboardData?.items;
-      if (!items) return;
+      if (!items || items.length === 0) return;
 
+      let imageFile: File | null = null;
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.indexOf('image') !== -1) {
           const file = items[i].getAsFile();
           if (file) {
-            e.preventDefault();
-            const formData = new FormData();
-            formData.append('file', file, `screenshot_${Date.now()}.png`);
-            try {
-              await api.post(`/attachments/STEP_EXECUTION/${selectedStep.id}`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-              });
-              loadStepDetails(selectedStep.id);
-            } catch (err) {
-              console.error('Chyba pri nahrávaní screenshotu:', err);
-            }
+            imageFile = file;
+            break; // Stop at first valid image to prevent duplicate paste!
           }
+        }
+      }
+
+      if (imageFile) {
+        e.preventDefault();
+        e.stopPropagation();
+        const formData = new FormData();
+        formData.append('file', imageFile, `screenshot_${Date.now()}.png`);
+        try {
+          await api.post(`/attachments/STEP_EXECUTION/${selectedStep.id}`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+          loadStepDetails(selectedStep.id);
+          showToast(`📸 Screenshot úspešne vložený k vybranému kroku!`, 'success');
+        } catch (err: any) {
+          console.error('Chyba pri nahrávaní screenshotu:', err);
+          showToast('Chyba pri nahrávaní screenshotu: ' + (err?.message || 'Neznáma chyba'), 'error');
         }
       }
     };
@@ -277,6 +288,16 @@ export default function TestExecutionPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="space-y-4 pb-12 animate-in fade-in duration-500">
+      {/* Toast Feedback Notification */}
+      {toastNotification && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-5 duration-200">
+          <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-zinc-950/95 border border-blue-500/40 text-white shadow-2xl backdrop-blur-xl font-mono text-xs">
+            <span className="text-sm">📸</span>
+            <span>{toastNotification.message}</span>
+          </div>
+        </div>
+      )}
+
       {/* Top Header Card */}
       <Card variant="glass" className="p-4 sm:p-5">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">

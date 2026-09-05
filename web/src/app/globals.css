@@ -150,3 +150,210 @@
 .light ::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.3);
 }
+
+/* ==========================================================================
+   PREMIUM LIGHT MODE SYSTEM OVERRIDES
+   Transforms dark utilities into crisp, high-contrast, modern enterprise UI
+   ========================================================================== */
+
+html.light {
+  color-scheme: light;
+}
+
+.light body {
+  background-color: #f8fafc !important; /* slate-50 */
+  color: #0f172a !important; /* slate-900 */
+}
+
+/* Light mode Navbar & Sticky Headers */
+.light nav,
+.light header nav {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(226, 232, 240, 0.9) !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+  color: #0f172a !important;
+}
+
+/* Light mode Card surfaces & Panels */
+.light .bg-black\/40,
+.light .bg-black\/60,
+.light .bg-black\/70,
+.light .bg-black\/80,
+.light .bg-black\/90,
+.light .bg-zinc-950,
+.light .bg-zinc-950\/60,
+.light .bg-zinc-950\/80,
+.light .bg-zinc-950\/90,
+.light .bg-zinc-950\/95,
+.light .bg-zinc-900,
+.light .bg-zinc-900\/80,
+.light .bg-zinc-900\/90,
+.light .bg-zinc-900\/95 {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* Light mode Card borders & Dividers */
+.light .border-white\/\[0\.04\],
+.light .border-white\/\[0\.06\],
+.light .border-white\/\[0\.08\],
+.light .border-white\/\[0\.12\],
+.light .border-white\/10,
+.light .border-white\/15,
+.light .border-white\/20,
+.light .border-white\/25,
+.light .border-zinc-800,
+.light .border-zinc-700 {
+  border-color: #e2e8f0 !important; /* slate-200 */
+}
+
+/* Light mode typography */
+.light .text-white {
+  color: #0f172a !important;
+}
+.light .text-zinc-100,
+.light .text-zinc-200 {
+  color: #1e293b !important; /* slate-800 */
+}
+.light .text-zinc-300,
+.light .text-zinc-400 {
+  color: #475569 !important; /* slate-600 */
+}
+.light .text-zinc-500 {
+  color: #64748b !important; /* slate-500 */
+}
+
+/* Light mode subtle hover & chip backgrounds */
+.light .bg-white\/\[0\.02\],
+.light .bg-white\/\[0\.03\],
+.light .bg-white\/\[0\.04\],
+.light .bg-white\/\[0\.05\],
+.light .bg-white\/\[0\.06\],
+.light .bg-white\/\[0\.08\],
+.light .bg-white\/10 {
+  background-color: #f1f5f9 !important; /* slate-100 */
+  border-color: #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+.light .hover\:bg-white\/\[0\.06\]:hover,
+.light .hover\:bg-white\/\[0\.08\]:hover,
+.light .hover\:bg-white\/10:hover,
+.light .hover\:bg-white\/15:hover,
+.light .hover\:bg-zinc-800:hover,
+.light .hover\:bg-zinc-900:hover {
+  background-color: #e2e8f0 !important; /* slate-200 */
+}
+
+/* Light mode inputs, textareas & dropdowns */
+.light input:not([type='checkbox']):not([type='radio']),
+.light textarea,
+.light select {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important; /* slate-300 */
+  color: #0f172a !important;
+}
+
+.light input::placeholder,
+.light textarea::placeholder {
+  color: #94a3b8 !important; /* slate-400 */
+}
+
+/* Light mode dropdown menus & popovers */
+.light .bg-zinc-950\/95,
+.light .bg-zinc-900\/95,
+.light .bg-black\/95 {
+  background-color: #ffffff !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.1), 0 4px 12px -2px rgba(0, 0, 0, 0.05) !important;
+  border-color: #cbd5e1 !important;
+}
+
+/* Light mode code blocks & inline code */
+.light code,
+.light kbd,
+.light pre {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Light mode buttons: maintain strong contrast */
+.light button.bg-white\/10,
+.light button.bg-white\/\[0\.05\] {
+  background-color: #f1f5f9 !important;
+  color: #1e293b !important;
+  border-color: #cbd5e1 !important;
+}
+.light button.bg-white\/10:hover,
+.light button.bg-white\/\[0\.05\]:hover {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* ==========================================================================
+   DYNAMIC & ANIMATED EMOJIS (Micro-interactions)
+   ========================================================================== */
+
+@keyframes emoji-heartbeat {
+  0%, 100% { transform: scale(1); }
+  25% { transform: scale(1.28) rotate(-3deg); }
+  40% { transform: scale(1.08) rotate(3deg); }
+  60% { transform: scale(1.22); }
+}
+
+@keyframes emoji-flame {
+  0%, 100% { transform: scale(1) translateY(0) rotate(0deg); filter: drop-shadow(0 0 2px rgba(249, 115, 22, 0.4)); }
+  25% { transform: scale(1.15) translateY(-2px) rotate(-4deg); filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.8)); }
+  50% { transform: scale(1.05) translateY(-1px) rotate(3deg); filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.6)); }
+  75% { transform: scale(1.18) translateY(-3px) rotate(-2deg); filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.9)); }
+}
+
+@keyframes emoji-rocket {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  20% { transform: translate(-2px, -3px) rotate(-5deg); }
+  40% { transform: translate(2px, -6px) rotate(5deg); }
+  60% { transform: translate(-1px, -8px) rotate(-3deg); }
+  80% { transform: translate(1px, -4px) rotate(2deg); }
+}
+
+@keyframes emoji-party {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.22) rotate(-12deg); }
+  50% { transform: scale(1.1) rotate(12deg); }
+  75% { transform: scale(1.26) rotate(-6deg); }
+}
+
+@keyframes emoji-bounce-fun {
+  0%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-5px) scaleY(1.12) scaleX(0.95); }
+  50% { transform: translateY(0) scaleY(0.92) scaleX(1.08); }
+  70% { transform: translateY(-2px); }
+}
+
+@keyframes emoji-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-12deg) scale(1.12); }
+  50% { transform: rotate(12deg) scale(1.12); }
+  75% { transform: rotate(-6deg); }
+}
+
+@keyframes emoji-sparkle {
+  0%, 100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
+  50% { transform: scale(1.25) rotate(18deg); filter: brightness(1.4) drop-shadow(0 0 6px rgba(250, 204, 21, 0.8)); }
+}
+
+@keyframes emoji-zap {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  20% { transform: scale(1.25) rotate(-6deg); filter: brightness(1.6) drop-shadow(0 0 8px rgba(234, 179, 8, 0.9)); }
+  40% { transform: scale(0.95) rotate(6deg); }
+  60% { transform: scale(1.18) rotate(-2deg); filter: brightness(1.4); }
+}
+
+.anim-emoji-heart { display: inline-block; animation: emoji-heartbeat 1.3s infinite ease-in-out; }
+.anim-emoji-flame { display: inline-block; animation: emoji-flame 1.4s infinite ease-in-out; }
+.anim-emoji-rocket { display: inline-block; animation: emoji-rocket 1.6s infinite ease-in-out; }
+.anim-emoji-party { display: inline-block; animation: emoji-party 1.5s infinite ease-in-out; }
+.anim-emoji-bounce { display: inline-block; animation: emoji-bounce-fun 1.2s infinite ease-in-out; }
+.anim-emoji-wiggle { display: inline-block; animation: emoji-wiggle 1.2s infinite ease-in-out; }
+.anim-emoji-sparkle { display: inline-block; animation: emoji-sparkle 1.8s infinite ease-in-out; }
+.anim-emoji-zap { display: inline-block; animation: emoji-zap 1.1s infinite ease-in-out; }

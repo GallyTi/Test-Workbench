@@ -34,12 +34,37 @@ export function PhotoViewerModal({ isOpen, attachment, onClose }: PhotoViewerMod
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const zoomIn = () => setScale((s) => Math.min(4, Number((s + 0.25).toFixed(2))));
+  const zoomOut = () => {
+    setScale((s) => {
+      const next = Math.max(0.5, Number((s - 0.25).toFixed(2)));
+      if (next <= 1) setPosition({ x: 0, y: 0 });
+      return next;
+    });
+  };
+  const resetTransform = () => {
+    setScale(1);
+    setRotation(0);
+    setPosition({ x: 0, y: 0 });
+  };
+  const rotate = () => setRotation((r) => (r + 90) % 360);
+
   useEffect(() => {
     setImgError(false);
     setScale(1);
     setRotation(0);
     setPosition({ x: 0, y: 0 });
   }, [attachment]);
+
+  useEffect(() => {
+    if (isOpen) {
+      const origOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = origOverflow;
+      };
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -53,6 +78,31 @@ export function PhotoViewerModal({ isOpen, attachment, onClose }: PhotoViewerMod
     }
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
+
+  // Non-passive wheel event listener to allow preventDefault without console error
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || !isOpen) return;
+
+    const onNativeWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.deltaY < 0) {
+        setScale((s) => Math.min(4, Number((s + 0.25).toFixed(2))));
+      } else {
+        setScale((s) => {
+          const next = Math.max(0.5, Number((s - 0.25).toFixed(2)));
+          if (next <= 1) setPosition({ x: 0, y: 0 });
+          return next;
+        });
+      }
+    };
+
+    container.addEventListener('wheel', onNativeWheel, { passive: false });
+    return () => {
+      container.removeEventListener('wheel', onNativeWheel);
+    };
+  }, [isOpen]);
 
   if (!isOpen || !attachment) return null;
 
@@ -76,31 +126,6 @@ export function PhotoViewerModal({ isOpen, attachment, onClose }: PhotoViewerMod
         minute: '2-digit',
       })
     : null;
-
-  const zoomIn = () => setScale((s) => Math.min(4, Number((s + 0.25).toFixed(2))));
-  const zoomOut = () =>
-    setScale((s) => {
-      const next = Math.max(0.5, Number((s - 0.25).toFixed(2)));
-      if (next <= 1) setPosition({ x: 0, y: 0 });
-      return next;
-    });
-
-  const resetTransform = () => {
-    setScale(1);
-    setRotation(0);
-    setPosition({ x: 0, y: 0 });
-  };
-
-  const rotate = () => setRotation((r) => (r + 90) % 360);
-
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    if (e.deltaY < 0) {
-      zoomIn();
-    } else {
-      zoomOut();
-    }
-  };
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (scale <= 1) return;
@@ -219,7 +244,6 @@ export function PhotoViewerModal({ isOpen, attachment, onClose }: PhotoViewerMod
           scale > 1 ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-default'
         }`}
         onClick={(e) => e.stopPropagation()}
-        onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}

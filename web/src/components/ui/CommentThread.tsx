@@ -20,7 +20,7 @@ import {
   Maximize2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { FullEmojiPicker } from './FullEmojiPicker';
+import { FullEmojiPicker, ANIMATED_EMOJI_CLASSES } from './FullEmojiPicker';
 import { GifPickerModal } from './GifPickerModal';
 import { PhotoViewerModal } from './PhotoViewerModal';
 
@@ -249,20 +249,23 @@ export function CommentThread({
 
   const handleTextareaPaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const items = e.clipboardData?.items;
-    if (!items) return;
+    if (!items || items.length === 0) return;
 
-    const imageFiles: File[] = [];
+    let imageFile: File | null = null;
     for (let i = 0; i < items.length; i++) {
       if (items[i].type.indexOf('image') !== -1) {
         const file = items[i].getAsFile();
-        if (file) imageFiles.push(file);
+        if (file) {
+          imageFile = file;
+          break; // Stop at first valid image to prevent duplicate paste!
+        }
       }
     }
 
-    if (imageFiles.length > 0) {
+    if (imageFile) {
       e.preventDefault();
       e.stopPropagation();
-      await uploadPhotoFiles(imageFiles);
+      await uploadPhotoFiles([imageFile]);
     }
   };
 
@@ -479,14 +482,15 @@ export function CommentThread({
                 >
                   {POPULAR_REACTION_EMOJIS.slice(0, 5).map((emoji) => {
                     const match = grouped.find((g) => g.emoji === emoji);
+                    const animClass = ANIMATED_EMOJI_CLASSES[emoji];
                     return (
                       <button
                         key={emoji}
                         onClick={() => handleToggleReaction(c.id, emoji)}
                         title={`Reagovať ${emoji}${match ? ` (${match.count}x)` : ''}`}
-                        className="hover:scale-125 transition-transform p-0.5 text-xs flex items-center gap-0.5 rounded hover:bg-white/10"
+                        className="hover:scale-125 transition-transform p-0.5 text-xs flex items-center gap-0.5 rounded hover:bg-white/10 group"
                       >
-                        <span>{emoji}</span>
+                        <span className={animClass || ''}>{emoji}</span>
                         {match && (
                           <span className="text-[10px] font-mono font-bold text-blue-300">
                             {match.count}
@@ -506,11 +510,14 @@ export function CommentThread({
                   </button>
                 </div>
 
-                {/* Comment Author & Full Timestamp */}
-                <div className="flex flex-wrap items-center justify-between text-xs mb-1.5 pb-1 border-b border-white/[0.04] gap-1 pr-1 sm:group-hover:pr-36 transition-all">
-                  <div className="flex items-center gap-1.5 min-w-0">
+                {/* Comment Author & Full Timestamp - Stable layout, no jitter on hover */}
+                <div className="flex flex-wrap items-center justify-between text-xs mb-1.5 pb-1 border-b border-white/[0.04] gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-[10px] font-bold text-white flex items-center justify-center shrink-0 shadow-sm">
+                      {c.author?.fullName?.charAt(0)?.toUpperCase() || 'U'}
+                    </div>
                     <span className="font-semibold text-white truncate">{c.author?.fullName}</span>
-                    <span className="text-[10px] text-zinc-500 font-mono truncate">
+                    <span className="text-[10px] text-zinc-500 font-mono truncate hidden sm:inline">
                       ({c.author?.email || 'Tester'})
                     </span>
                   </div>
@@ -537,21 +544,24 @@ export function CommentThread({
 
                 {/* Discord-style Reaction Badges with Counts */}
                 <div className="flex flex-wrap items-center gap-1.5 mt-2.5 pt-1 border-t border-white/[0.03]">
-                  {grouped.map((grp) => (
-                    <button
-                      key={grp.emoji}
-                      onClick={() => handleToggleReaction(c.id, grp.emoji)}
-                      title={`${grp.users.join(', ')} (${grp.count}x)`}
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-mono transition-all ${
-                        grp.hasReacted
-                          ? 'bg-blue-600/30 border border-blue-500/60 text-blue-200 shadow-sm shadow-blue-500/20'
-                          : 'bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-zinc-300 hover:text-white'
-                      }`}
-                    >
-                      <span className="text-sm leading-none">{grp.emoji}</span>
-                      <span className="font-bold text-[11px]">{grp.count}</span>
-                    </button>
-                  ))}
+                  {grouped.map((grp) => {
+                    const animClass = ANIMATED_EMOJI_CLASSES[grp.emoji];
+                    return (
+                      <button
+                        key={grp.emoji}
+                        onClick={() => handleToggleReaction(c.id, grp.emoji)}
+                        title={`${grp.users.join(', ')} (${grp.count}x)`}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-mono transition-all ${
+                          grp.hasReacted
+                            ? 'bg-blue-600/30 border border-blue-500/60 text-blue-200 shadow-sm shadow-blue-500/20'
+                            : 'bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-zinc-300 hover:text-white'
+                        }`}
+                      >
+                        <span className={`text-sm leading-none ${animClass || ''}`}>{grp.emoji}</span>
+                        <span className="font-bold text-[11px]">{grp.count}</span>
+                      </button>
+                    );
+                  })}
 
                   {totalReactionsCount > 0 && (
                     <span className="text-[10px] font-mono text-zinc-400 bg-white/[0.03] px-2 py-0.5 rounded-md border border-white/[0.05]">

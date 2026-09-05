@@ -92,6 +92,15 @@ export default function TestCaseDetailPage({ params }: { params: Promise<{ id: s
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadTargetStepId, setUploadTargetStepId] = useState<string | null>(null);
 
+  // Active step & toast feedback for Ctrl+V screenshot pasting
+  const [activeStepId, setActiveStepId] = useState<string | null>(null);
+  const [toastNotification, setToastNotification] = useState<{ message: string; type?: 'success' | 'info' | 'error' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
+    setToastNotification({ message, type });
+    setTimeout(() => setToastNotification(null), 4000);
+  };
+
   const fetchTestCase = async () => {
     try {
       const res: any = await api.get(`/projects/${activeProject?.id || 'RITS'}/test-cases/${testCaseId}`);
@@ -177,51 +186,63 @@ export default function TestCaseDetailPage({ params }: { params: Promise<{ id: s
   // Single robust Clipboard Ctrl+V Screenshot Paste handler
   useEffect(() => {
     const handlePaste = async (e: ClipboardEvent) => {
-      // If user is focused on an input or textarea (e.g. comment editor or step field), don't hijack
+      // Don't hijack if user is typing inside the comment editor textarea
       const target = e.target as HTMLElement | null;
-      if (
-        target?.tagName === 'INPUT' ||
-        target?.tagName === 'TEXTAREA' ||
-        target?.isContentEditable
-      ) {
+      if (target?.closest?.('.comment-thread-editor') || target?.tagName === 'TEXTAREA') {
         return;
       }
 
+      const items = e.clipboardData?.items;
+      if (!items || items.length === 0) return;
+
+      // Extract ONLY ONE image representation to prevent duplicate uploads
+      let imageFile: File | null = null;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const file = items[i].getAsFile();
+          if (file) {
+            imageFile = file;
+            break; // Stop at first valid image representation!
+          }
+        }
+      }
+
+      if (!imageFile) return;
+
+      // Target step is either explicitly active/clicked step, or first expanded step, or first step
       const targetStep =
+        activeStepId ||
         Object.keys(expandedSteps).find((k) => expandedSteps[k]) ||
         testCase?.steps?.[0]?.id;
 
       if (!targetStep) return;
 
-      const items = e.clipboardData?.items;
-      if (!items) return;
+      const targetStepObj = testCase?.steps?.find((s: any) => s.id === targetStep);
+      const stepNumLabel = targetStepObj ? `#${targetStepObj.stepNumber}` : '';
 
-      for (let i = 0; i < items.length; i++) {
-        if (items[i].type.indexOf('image') !== -1) {
-          const file = items[i].getAsFile();
-          if (file) {
-            e.preventDefault();
-            setUploadingForStep(targetStep);
-            const formData = new FormData();
-            formData.append('file', file, `screenshot_step_${Date.now()}.png`);
-            try {
-              await api.post(`/attachments/TEST_CASE_STEP/${targetStep}`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-              });
-              await loadStepMedia(targetStep);
-            } catch (err) {
-              console.error('Chyba pri nahrávaní screenshotu:', err);
-            } finally {
-              setUploadingForStep(null);
-            }
-          }
-        }
+      e.preventDefault();
+      e.stopPropagation();
+
+      setUploadingForStep(targetStep);
+      const formData = new FormData();
+      formData.append('file', imageFile, `screenshot_step_${Date.now()}.png`);
+      try {
+        await api.post(`/attachments/TEST_CASE_STEP/${targetStep}`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        await loadStepMedia(targetStep);
+        showToast(`📸 Screenshot bol úspešne vložený do kroku ${stepNumLabel}!`, 'success');
+      } catch (err: any) {
+        console.error('Chyba pri nahrávaní screenshotu:', err);
+        showToast('Chyba pri nahrávaní screenshotu: ' + (err?.message || 'Chyba'), 'error');
+      } finally {
+        setUploadingForStep(null);
       }
     };
 
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
-  }, [expandedSteps, testCase]);
+  }, [activeStepId, expandedSteps, testCase]);
 
   const handleAddStep = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -416,6 +437,16 @@ export default function TestCaseDetailPage({ params }: { params: Promise<{ id: s
 
   return (
     <div className="space-y-5 pb-20 animate-in fade-in duration-500 max-w-[1680px] w-full mx-auto">
+      {/* Toast Feedback Notification */}
+      {toastNotification && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-5 duration-200">
+          <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-zinc-950/95 border border-blue-500/40 text-white shadow-2xl backdrop-blur-xl font-mono text-xs">
+            <span className="text-sm">📸</span>
+            <span>{toastNotification.message}</span>
+          </div>
+        </div>
+      )}
+
       {/* Hidden Multi-file input (Images, Videos, Docs) */}
       <input
         type="file"
@@ -647,8 +678,11 @@ export default function TestCaseDetailPage({ params }: { params: Promise<{ id: s
           return (
             <div
               key={step.id}
+              onClick={() => setActiveStepId(step.id)}
               className={`rounded-2xl transition-all duration-200 border ${
-                isExpanded
+                activeStepId === step.id
+                  ? 'border-blue-500 ring-2 ring-blue-500/40 bg-zinc-950 shadow-2xl shadow-blue-500/10'
+                  : isExpanded
                   ? 'border-blue-500/40 bg-zinc-950 shadow-xl shadow-blue-500/10'
                   : 'border-white/[0.1] hover:border-white/20 bg-zinc-950/60'
               }`}
@@ -670,6 +704,12 @@ export default function TestCaseDetailPage({ params }: { params: Promise<{ id: s
                       <span className="text-xs sm:text-sm font-semibold text-white truncate max-w-xl">
                         {step.action}
                       </span>
+
+                      {activeStepId === step.id && (
+                        <span className="text-[10px] text-blue-300 font-mono bg-blue-500/20 border border-blue-500/40 px-2 py-0.5 rounded-full font-medium">
+                          🎯 Pripravené na Ctrl+V
+                        </span>
+                      )}
 
                       {extra?.transactionCode && (
                         <Badge variant="purple" className="font-mono text-[10px] py-0 px-1.5">
@@ -1004,6 +1044,50 @@ export default function TestCaseDetailPage({ params }: { params: Promise<{ id: s
                       >
                         <Upload className="w-3.5 h-3.5 mr-1" />
                         {uploadingForStep === step.id ? 'Nahrávam...' : 'Pridať Viac Fotografií'}
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        type="button"
+                        onClick={async () => {
+                          setActiveStepId(step.id);
+                          try {
+                            if (navigator.clipboard && navigator.clipboard.read) {
+                              const clipboardItems = await navigator.clipboard.read();
+                              for (const item of clipboardItems) {
+                                const imageType = item.types.find((t) => t.startsWith('image/'));
+                                if (imageType) {
+                                  const blob = await item.getType(imageType);
+                                  const file = new File([blob], `screenshot_step_${Date.now()}.png`, { type: imageType });
+                                  setUploadingForStep(step.id);
+                                  const formData = new FormData();
+                                  formData.append('file', file, file.name);
+                                  await api.post(`/attachments/TEST_CASE_STEP/${step.id}`, formData, {
+                                    headers: { 'Content-Type': 'multipart/form-data' },
+                                  });
+                                  await loadStepMedia(step.id);
+                                  showToast(`📸 Screenshot bol úspešne vložený do kroku #${step.stepNumber}!`, 'success');
+                                  setUploadingForStep(null);
+                                  return;
+                                }
+                              }
+                            }
+                            showToast('Stlačte Ctrl+V kdekoľvek na klávesnici pre vloženie screenshotu zo schránky', 'info');
+                          } catch {
+                            showToast('Stlačte Ctrl+V na klávesnici pre vloženie screenshotu zo schránky', 'info');
+                          }
+                        }}
+                        disabled={uploadingForStep === step.id}
+                        className={`h-9 shrink-0 text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                          activeStepId === step.id
+                            ? 'border-blue-500 bg-blue-500/20 text-blue-300'
+                            : 'border-white/20 hover:border-blue-400 text-zinc-300 hover:text-white'
+                        }`}
+                        title="Vložiť screenshot zo schránky do tohto kroku (alebo stlačte Ctrl+V na klávesnici)"
+                      >
+                        <span className="text-sm">📋</span>
+                        <span>Vložiť Screenshot (Ctrl+V)</span>
                       </Button>
                     </div>
                   </div>
