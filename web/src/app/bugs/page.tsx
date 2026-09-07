@@ -19,11 +19,13 @@ import {
   Trash2,
   Layers,
   ArrowRight,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/card';
 import { ReportIssueModal } from '@/components/ui/ReportIssueModal';
 import { useTranslation } from '@/lib/i18n';
+import { exportToCsv } from '@/lib/export-csv';
 
 export default function BugsPage() {
   const { activeProject, user } = useAppStore();
@@ -147,14 +149,40 @@ ${bug.description}
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setReportModalOpen(true)}
-          className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold flex items-center gap-2 shadow-lg shadow-rose-600/30 transition-all self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Nahlásiť nový defekt / Jira</span>
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          <button
+            type="button"
+            onClick={() => {
+              exportToCsv(
+                `Defekty_Jira_${activeProject?.name || 'RITS'}_${new Date().toISOString().slice(0, 10)}`,
+                [
+                  { header: 'Kód defektu', accessor: 'code' },
+                  { header: 'Názov', accessor: 'title' },
+                  { header: 'Závažnosť', accessor: 'severity' },
+                  { header: 'Stav', accessor: 'status' },
+                  { header: 'Nahlásil', accessor: (b: any) => b.reportedBy?.fullName || '' },
+                  { header: 'Jira URL', accessor: 'externalTicketUrl' },
+                  { header: 'Dátum nahlásenia', accessor: (b: any) => new Date(b.createdAt).toLocaleString('sk-SK') },
+                  { header: 'Popis', accessor: 'description' },
+                ],
+                bugs
+              );
+            }}
+            className="px-3.5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-white text-xs font-semibold flex items-center gap-2 transition-all"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+            <span>Export CSV</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setReportModalOpen(true)}
+            className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold flex items-center gap-2 shadow-lg shadow-rose-600/30 transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Nahlásiť nový defekt / Jira</span>
+          </button>
+        </div>
       </div>
 
       {/* Metric Cards Grid */}

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef, use } from 'react';
+import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useAppStore } from '@/lib/store';
 import { getSocket } from '@/lib/socket';
@@ -25,6 +26,7 @@ import {
   Edit3,
   Sparkles,
   ShieldAlert,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -35,6 +37,8 @@ import { CommentThread } from '@/components/ui/CommentThread';
 import { MediaViewerModal } from '@/components/ui/MediaViewerModal';
 import { ImageAnnotationModal } from '@/components/ui/ImageAnnotationModal';
 import { resolveAttachmentUrl } from '@/lib/api';
+import { exportToCsv } from '@/lib/export-csv';
+import { TEST_TEMPLATES } from '@/lib/test-templates';
 
 export default function TestExecutionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: testRunId } = use(params);
@@ -323,6 +327,34 @@ export default function TestExecutionPage({ params }: { params: Promise<{ id: st
   const showstoppersCount = blockedSteps.length + failedSteps.length;
   const isFullyPassed = totalSteps > 0 && passedSteps === totalSteps;
 
+  // Identify first stopped or blocking step
+  const firstStoppedStep =
+    allSteps.find((s: any) => s.status === 'BLOCKED' || s.status === 'FAILED') ||
+    allSteps.find((s: any) => s.status === 'IN_PROGRESS') ||
+    allSteps.find((s: any) => s.status === 'PENDING');
+
+  const stoppedDelayMins = firstStoppedStep
+    ? Math.max(1, Math.round((firstStoppedStep.durationSecs || 0) / 60))
+    : 0;
+
+  const handleExportRunCsv = () => {
+    if (!run) return;
+    exportToCsv(
+      `Test_Run_${run.title.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}`,
+      [
+        { header: 'Scenár Kód', accessor: (s: any) => s.testCase?.code || '' },
+        { header: 'Scenár Názov', accessor: (s: any) => s.testCase?.title || '' },
+        { header: 'Krok #', accessor: (s: any) => s.testCaseStep?.stepNumber || '' },
+        { header: 'Akcia', accessor: (s: any) => s.testCaseStep?.action || '' },
+        { header: 'Očakávaný výsledok', accessor: (s: any) => s.testCaseStep?.expectedResult || '' },
+        { header: 'Status', accessor: (s: any) => s.status },
+        { header: 'Doba trvania (sekundy)', accessor: (s: any) => s.durationSecs || 0 },
+        { header: 'Reálny výsledok', accessor: (s: any) => s.actualResult || '' },
+      ],
+      allSteps
+    );
+  };
+
   return (
     <div className="space-y-4 pb-12 animate-in fade-in duration-500">
       {/* Toast Feedback Notification */}
@@ -361,8 +393,18 @@ export default function TestExecutionPage({ params }: { params: Promise<{ id: st
             </p>
           </div>
 
-          <div className="flex items-center gap-3 text-right">
-            <div className="px-3 py-2 bg-white/[0.02] border border-white/[0.05] rounded-xl">
+          <div className="flex items-center gap-2.5 text-right flex-wrap">
+            <Button
+              onClick={handleExportRunCsv}
+              variant="outline"
+              size="sm"
+              className="h-9 px-3 text-xs bg-white/5 hover:bg-white/10 border-white/15 text-white gap-1.5 font-semibold"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Export CSV</span>
+            </Button>
+
+            <div className="px-3 py-1.5 bg-white/[0.02] border border-white/[0.05] rounded-xl text-left">
               <span className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider block">
                 Stav krokov
               </span>
@@ -372,7 +414,7 @@ export default function TestExecutionPage({ params }: { params: Promise<{ id: st
             </div>
 
             {showstoppersCount > 0 && (
-              <div className="px-3 py-2 bg-rose-500/10 border border-rose-500/30 rounded-xl">
+              <div className="px-3 py-1.5 bg-rose-500/10 border border-rose-500/30 rounded-xl text-left">
                 <span className="text-[10px] text-rose-400 font-medium uppercase tracking-wider block">
                   Showstoppery
                 </span>
@@ -385,42 +427,51 @@ export default function TestExecutionPage({ params }: { params: Promise<{ id: st
         </div>
       </Card>
 
-      {/* Steering Committee Release Gate Banner */}
+      {/* Explicit Test Status Banner: 100% PASSED vs STOPPED ON STEP X */}
       {isFullyPassed ? (
-        <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between shadow-lg">
-          <div className="flex items-center gap-2.5">
-            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+        <div className="p-4 rounded-2xl bg-emerald-500/15 border-2 border-emerald-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xl animate-in fade-in duration-300">
+          <div className="flex items-center gap-3">
+            <CheckCircle2 className="w-7 h-7 text-emerald-400 shrink-0" />
             <div>
-              <h3 className="text-xs font-bold text-emerald-400">
-                VŠETKY KROKY PREŠLI (100% PASSED)
+              <h3 className="text-sm sm:text-base font-extrabold text-emerald-400">
+                🎉 100% PASSED (KOMPLETNE OVERENÝ)
               </h3>
-              <p className="text-[11px] text-emerald-300/80">
-                0 kritických chýb. Splnená definícia úspešného testovania pre posúdenie Steering Committee na povolenie otvorenia stanice (SeS).
+              <p className="text-xs text-emerald-300/90 font-medium">
+                Všetky testovacie kroky boli úspešne vykonané. 0 kritických chýb. Splnená definícia úspešného testovania pre posúdenie Steering Committee na povolenie otvorenia stanice (SeS Readiness).
               </p>
             </div>
           </div>
-          <Badge variant="success" className="font-mono text-xs shrink-0">
-            READY TO OPEN SES ⛽
-          </Badge>
+          <div className="flex items-center gap-2 shrink-0">
+            <Badge variant="success" className="font-mono text-xs px-3 py-1.5 font-bold shrink-0">
+              READY TO OPEN SES ⛽
+            </Badge>
+          </div>
         </div>
-      ) : showstoppersCount > 0 ? (
-        <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
-          <div className="flex items-center gap-2.5">
-            <ShieldAlert className="w-5 h-5 text-rose-400 shrink-0" />
+      ) : (
+        <div className="p-4 rounded-2xl bg-rose-500/15 border-2 border-rose-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xl animate-in fade-in duration-300">
+          <div className="flex items-center gap-3">
+            <ShieldAlert className="w-7 h-7 text-rose-500 shrink-0 animate-pulse" />
             <div>
-              <h3 className="text-xs font-bold text-rose-400 flex items-center gap-2">
-                TEST ZASTAVENÝ: {showstoppersCount} SHOWSTOPPER{showstoppersCount > 1 ? 'OV' : ''} DETEKOVANÝCH
+              <h3 className="text-sm sm:text-base font-extrabold text-rose-400 flex items-center gap-2">
+                🛑 TEST STOJÍ NA KROKU #{firstStoppedStep?.testCaseStep?.stepNumber || 1}
+                {stoppedDelayMins > 0 ? ` (ZDRŽANIE: ${stoppedDelayMins} minút)` : ''}
               </h3>
-              <p className="text-[11px] text-rose-300/80">
-                Zistené zlyhané ({failedSteps.length}) alebo blokované ({blockedSteps.length}) kroky. Pravidlo MOL/Slovnaft: Každý nájdený problém je potenciálny showstopper vyžadujúci schválenie Steering Committee.
+              <p className="text-xs text-rose-300/90 font-medium">
+                {showstoppersCount > 0
+                  ? `Detekovaných ${showstoppersCount} showstopperov. Každá nájdená chyba je potenciálny blocker otvorenia SeS vyžadujúci posúdenie Steering Committee.`
+                  : `Test je pozastavený na kroku #${firstStoppedStep?.testCaseStep?.stepNumber || 1}. Zostáva vykonať ${totalSteps - passedSteps} krokov do kompletnej verifikácie.`}
               </p>
             </div>
           </div>
-          <Badge variant="destructive" className="font-mono text-xs self-start sm:self-auto shrink-0 animate-pulse">
-            ESKALÁCIA: STEERING COMMITTEE 🛑
-          </Badge>
+          <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+            <Link href="/admin/steering-committee">
+              <Button size="sm" variant="outline" className="border-rose-400/40 text-rose-300 hover:text-white text-xs font-semibold">
+                Steering Committee Brány
+              </Button>
+            </Link>
+          </div>
         </div>
-      ) : null}
+      )}
 
       {/* Main Split Workbench: Left Navigation (4 Cols), Right Step Execution (8 Cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -876,6 +927,32 @@ export default function TestExecutionPage({ params }: { params: Promise<{ id: st
               <Bug className="w-4 h-4" /> Nahlásiť Defekt
             </h2>
             <form onSubmit={handleReportBug} className="space-y-3">
+              {/* Template Selector for Bug */}
+              <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/10 space-y-1">
+                <label className="block text-[11px] font-mono text-blue-400 font-semibold">
+                  📋 Vybrať z predvyplnenej šablóny (Confluence Template):
+                </label>
+                <select
+                  onChange={(e) => {
+                    const found = TEST_TEMPLATES.find((t) => t.id === e.target.value);
+                    if (found) {
+                      setBugTitle(found.nameSk);
+                      setBugDesc(found.confluenceDescriptionSk);
+                      setBugSeverity(found.category === 'HARDWARE' || found.category === 'STATION' ? 'CRITICAL' : 'BLOCKER');
+                    }
+                  }}
+                  className="w-full bg-black/60 border border-white/20 rounded-lg px-2.5 h-8 text-xs text-white focus:outline-none"
+                  defaultValue=""
+                >
+                  <option value="" disabled>-- Vyberte šablónu chyby / postupu --</option>
+                  {TEST_TEMPLATES.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.nameSk} ({t.category})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div>
                 <label className="block text-xs font-medium text-zinc-300 mb-1">
                   Názov defektu
@@ -897,23 +974,24 @@ export default function TestExecutionPage({ params }: { params: Promise<{ id: st
                   onChange={(e) => setBugSeverity(e.target.value)}
                   className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-3 h-9 text-xs text-white focus:outline-none"
                 >
-                  <option value="CRITICAL">CRITICAL</option>
-                  <option value="BLOCKER">BLOCKER</option>
-                  <option value="MAJOR">MAJOR</option>
-                  <option value="MINOR">MINOR</option>
+                  <option value="CRITICAL">CRITICAL (Showstopper)</option>
+                  <option value="BLOCKER">BLOCKER (Blokujúca chyba)</option>
+                  <option value="MAJOR">MAJOR (Závažná chyba)</option>
+                  <option value="MINOR">MINOR (Drobná kozmetická)</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-zinc-300 mb-1">
-                  Popis chyby a zistenia
+                  Popis chyby (Podpora Confluence tabuliek a checklistov)
                 </label>
                 <Textarea
-                  rows={3}
+                  rows={5}
                   required
                   value={bugDesc}
                   onChange={(e) => setBugDesc(e.target.value)}
-                  className="text-xs"
+                  placeholder="Postup reprodukcie, chybový log, očakávaný vs reálny stav..."
+                  className="text-xs font-mono"
                 />
               </div>
 

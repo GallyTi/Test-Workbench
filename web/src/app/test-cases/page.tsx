@@ -34,6 +34,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { exportToCsv } from '@/lib/export-csv';
 
 export default function TestCasesPage() {
   const router = useRouter();
@@ -232,6 +233,30 @@ export default function TestCasesPage() {
 
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-2">
+          <Button
+            onClick={() => {
+              exportToCsv(
+                `Test_Catalog_${activeProject?.name || 'RITS'}_${new Date().toISOString().slice(0, 10)}`,
+                [
+                  { header: 'Kód', accessor: 'code' },
+                  { header: 'Názov', accessor: 'title' },
+                  { header: 'Priorita', accessor: 'priority' },
+                  { header: 'Typ', accessor: 'testType' },
+                  { header: 'Epic', accessor: (tc: any) => tc.epic?.title || tc.epic?.code || '' },
+                  { header: 'Tagy', accessor: (tc: any) => tc.tags?.join(', ') || '' },
+                  { header: 'Počet krokov', accessor: (tc: any) => tc.steps?.length || 0 },
+                  { header: 'Popis', accessor: 'description' },
+                ],
+                testCases
+              );
+            }}
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs font-semibold border-white/20 hover:border-emerald-400 gap-1.5"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" /> Export CSV
+          </Button>
+
           <Button
             onClick={() => setShowCreateEpicModal(true)}
             variant="outline"

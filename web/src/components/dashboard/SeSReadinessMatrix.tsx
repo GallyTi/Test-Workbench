@@ -275,13 +275,19 @@ export function SeSReadinessMatrix({ testCases = [], runs = [] }: SeSReadinessMa
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0 self-end md:self-auto">
+        <div className="flex items-center gap-2.5 shrink-0 self-end md:self-auto flex-wrap">
           <div className="px-3 py-1.5 rounded-xl bg-white/80 dark:bg-black/60 border border-slate-200 dark:border-white/10 text-right">
             <span className="text-[9px] font-mono text-slate-500 dark:text-zinc-400 block uppercase">Aktívne Showstoppery</span>
             <span className={`text-sm font-extrabold font-mono ${highwayMetrics.showstoppers > 0 ? 'text-rose-500 dark:text-rose-400 animate-pulse' : 'text-emerald-600 dark:text-emerald-400'}`}>
               {highwayMetrics.showstoppers} blokácií
             </span>
           </div>
+
+          <Link href="/admin/steering-committee">
+            <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold h-8 shadow-sm">
+              Spravovať Brány & Waivery
+            </Button>
+          </Link>
         </div>
       </div>
 

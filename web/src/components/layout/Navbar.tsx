@@ -29,6 +29,10 @@ import {
   Sun,
   Moon,
   Languages,
+  Trophy,
+  Rocket,
+  Scale,
+  Cpu,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
@@ -107,8 +111,15 @@ export function Navbar() {
 
   const isTestingActive =
     pathname.startsWith('/test-') || pathname.startsWith('/excel-import') || pathname.startsWith('/bugs');
-  const isArchitectureActive = pathname.startsWith('/docs') || pathname.startsWith('/graph');
-  const isAdminActive = pathname.startsWith('/admin') || pathname.startsWith('/audit-logs');
+  const isArchitectureActive =
+    pathname.startsWith('/docs') || pathname.startsWith('/graph') || pathname.startsWith('/architecture');
+  const isGatesActive =
+    pathname.startsWith('/admin/steering-committee') ||
+    pathname.startsWith('/roadmap') ||
+    pathname.startsWith('/capacity');
+  const isAdminActive =
+    (pathname.startsWith('/admin') && !pathname.startsWith('/admin/steering-committee')) ||
+    pathname.startsWith('/audit-logs');
 
   return (
     <header className="sticky top-0 z-50 w-full pt-3 px-4 sm:px-6">
@@ -266,6 +277,23 @@ export function Navbar() {
               {openDropdown === 'arch' && (
                 <div className="absolute left-0 top-full mt-2 w-60 bg-zinc-950/95 backdrop-blur-2xl border border-white/15 rounded-2xl shadow-2xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150 space-y-1">
                   <Link
+                    href="/architecture"
+                    onClick={() => setOpenDropdown(null)}
+                    className="flex items-center justify-between p-2 rounded-xl text-xs text-zinc-300 hover:text-white hover:bg-white/10 transition-colors"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Cpu className="w-4 h-4 text-emerald-400" />
+                      <div>
+                        <div className="font-semibold">Architektúra RITS (z PDF)</div>
+                        <div className="text-[10px] text-zinc-500">Topológia & Posybe2 služby</div>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="text-[9px] font-mono border-blue-400/40 text-blue-300 px-1.5 py-0">
+                      R6.1
+                    </Badge>
+                  </Link>
+
+                  <Link
                     href="/docs"
                     onClick={() => setOpenDropdown(null)}
                     className="flex items-center justify-between p-2 rounded-xl text-xs text-zinc-300 hover:text-white hover:bg-white/10 transition-colors"
@@ -277,9 +305,6 @@ export function Navbar() {
                         <div className="text-[10px] text-zinc-500">Word editor & UML diagramy</div>
                       </div>
                     </div>
-                    <Badge variant="default" className="text-[9px] bg-blue-600 px-1.5 py-0">
-                      Nové
-                    </Badge>
                   </Link>
 
                   <Link
@@ -291,6 +316,73 @@ export function Navbar() {
                     <div>
                       <div className="font-semibold">Architektúrny Graf</div>
                       <div className="text-[10px] text-zinc-500">Vizualizácia prepojení systémov</div>
+                    </div>
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            {/* 4. SeS Brány & Release Dropdown */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setOpenDropdown(openDropdown === 'gates' ? null : 'gates')}
+                className={cn(
+                  'px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 flex items-center gap-1.5',
+                  isGatesActive
+                    ? 'text-white bg-amber-500/15 border border-amber-500/30 text-amber-300'
+                    : 'text-zinc-400 hover:text-white hover:bg-white/[0.06]'
+                )}
+              >
+                <span>🎯 SeS Brány & Release</span>
+                <ChevronDown
+                  className={cn(
+                    'w-3 h-3 transition-transform',
+                    openDropdown === 'gates' ? 'rotate-180' : ''
+                  )}
+                />
+              </button>
+
+              {openDropdown === 'gates' && (
+                <div className="absolute left-0 top-full mt-2 w-64 bg-zinc-950/95 backdrop-blur-2xl border border-white/15 rounded-2xl shadow-2xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150 space-y-1">
+                  <Link
+                    href="/admin/steering-committee"
+                    onClick={() => setOpenDropdown(null)}
+                    className="flex items-center justify-between p-2 rounded-xl text-xs text-zinc-300 hover:text-white hover:bg-white/10 transition-colors"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Scale className="w-4 h-4 text-rose-400" />
+                      <div>
+                        <div className="font-semibold">Steering Committee & SeS Brány</div>
+                        <div className="text-[10px] text-zinc-500">Showstoppery & 4 SeS Odznaky</div>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="text-[9px] font-mono border-rose-400/40 text-rose-300 px-1.5 py-0">
+                      GO/NO-GO
+                    </Badge>
+                  </Link>
+
+                  <Link
+                    href="/roadmap"
+                    onClick={() => setOpenDropdown(null)}
+                    className="flex items-center gap-2.5 p-2 rounded-xl text-xs text-zinc-300 hover:text-white hover:bg-white/10 transition-colors"
+                  >
+                    <Rocket className="w-4 h-4 text-blue-400" />
+                    <div>
+                      <div className="font-semibold">Roadmapa & Release 2026</div>
+                      <div className="text-[10px] text-zinc-500">Časová os a míľniky trhov</div>
+                    </div>
+                  </Link>
+
+                  <Link
+                    href="/capacity"
+                    onClick={() => setOpenDropdown(null)}
+                    className="flex items-center gap-2.5 p-2 rounded-xl text-xs text-zinc-300 hover:text-white hover:bg-white/10 transition-colors"
+                  >
+                    <Users className="w-4 h-4 text-purple-400" />
+                    <div>
+                      <div className="font-semibold">Kapacitný Plánovač</div>
+                      <div className="text-[10px] text-zinc-500">Vyťaženie testerov podľa streamov</div>
                     </div>
                   </Link>
                 </div>
@@ -549,6 +641,18 @@ export function Navbar() {
                 Architektúra & Docs
               </span>
               <Link
+                href="/architecture"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between p-2 rounded-xl text-xs text-zinc-300 hover:bg-white/10"
+              >
+                <div className="flex items-center gap-2">
+                  <Cpu className="w-4 h-4 text-emerald-400" /> Architektúra RITS (z PDF)
+                </div>
+                <Badge variant="outline" className="text-[9px] font-mono border-blue-400/40 text-blue-300">
+                  R6.1
+                </Badge>
+              </Link>
+              <Link
                 href="/docs"
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center gap-2 p-2 rounded-xl text-xs text-zinc-300 hover:bg-white/10"
@@ -561,6 +665,38 @@ export function Navbar() {
                 className="flex items-center gap-2 p-2 rounded-xl text-xs text-zinc-300 hover:bg-white/10"
               >
                 <Network className="w-4 h-4 text-purple-400" /> Architektúrny Graf
+              </Link>
+            </div>
+
+            <div className="pt-2 border-t border-white/10 space-y-1">
+              <span className="text-[10px] font-mono uppercase text-amber-500 px-2 font-bold">
+                🎯 SeS Brány & Release
+              </span>
+              <Link
+                href="/admin/steering-committee"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between p-2 rounded-xl text-xs text-zinc-300 hover:bg-white/10"
+              >
+                <div className="flex items-center gap-2">
+                  <Scale className="w-4 h-4 text-rose-400" /> Steering Committee & SeS Brány
+                </div>
+                <Badge variant="outline" className="text-[9px] font-mono border-rose-400/40 text-rose-300">
+                  GO/NO-GO
+                </Badge>
+              </Link>
+              <Link
+                href="/roadmap"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2 p-2 rounded-xl text-xs text-zinc-300 hover:bg-white/10"
+              >
+                <Rocket className="w-4 h-4 text-blue-400" /> Roadmapa & Release 2026
+              </Link>
+              <Link
+                href="/capacity"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2 p-2 rounded-xl text-xs text-zinc-300 hover:bg-white/10"
+              >
+                <Users className="w-4 h-4 text-purple-400" /> Kapacitný Plánovač (Streamy)
               </Link>
             </div>
 

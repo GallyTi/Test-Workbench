@@ -43,6 +43,7 @@ import { MediaViewerModal } from '@/components/ui/MediaViewerModal';
 import { ImageAnnotationModal } from '@/components/ui/ImageAnnotationModal';
 import { Film } from 'lucide-react';
 import { resolveAttachmentUrl } from '@/lib/api';
+import { TEST_TEMPLATES } from '@/lib/test-templates';
 
 export default function TestCaseDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: testCaseId } = use(params);
@@ -1328,6 +1329,34 @@ export default function TestCaseDetailPage({ params }: { params: Promise<{ id: s
             </div>
 
             <form onSubmit={handleAddStep} className="space-y-4">
+              {/* Enterprise Template Picker */}
+              <div className="p-3 rounded-xl bg-blue-950/20 border border-blue-500/30 space-y-1.5">
+                <label className="block text-[11px] font-mono text-blue-300 font-bold">
+                  📋 Predvyplniť z Enterprise Šablóny (Template Picker):
+                </label>
+                <select
+                  onChange={(e) => {
+                    const found = TEST_TEMPLATES.find((t) => t.id === e.target.value);
+                    if (found) {
+                      setNewStepAction(found.actionSk);
+                      setNewStepExpected(found.expectedResultSk);
+                      setNewStepInputData(found.payloadTemplate);
+                    }
+                  }}
+                  className="w-full bg-black/60 border border-white/20 rounded-lg px-2.5 h-9 text-xs text-white focus:outline-none focus:border-blue-400"
+                  defaultValue=""
+                >
+                  <option value="" disabled>
+                    -- Vyberte šablónu (Hardvér, Softvér, Palivá, eKasa, OPT, SAP) --
+                  </option>
+                  {TEST_TEMPLATES.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.nameSk} ({t.category})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div>
                 <label className="block text-xs font-semibold text-zinc-200 mb-1">
                   Akcia / Činnosť <span className="text-rose-400">*</span>

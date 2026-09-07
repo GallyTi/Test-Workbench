@@ -15,11 +15,13 @@ import {
   ArrowRight,
   X,
   Layers,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { exportToCsv } from '@/lib/export-csv';
 
 export default function TestRunsPage() {
   const { activeProject } = useAppStore();
@@ -98,9 +100,32 @@ export default function TestRunsPage() {
             Spúšťanie integračných balíkov, tímová exekúcia krokov v reálnom čase a meranie SLA časovačov.
           </p>
         </div>
-        <Button onClick={() => setShowCreateModal(true)} variant="default" size="default">
-          <Plus className="w-4 h-4 mr-1" /> Spustiť Nový Run
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => {
+              exportToCsv(
+                `Test_Runs_${activeProject?.name || 'RITS'}_${new Date().toISOString().slice(0, 10)}`,
+                [
+                  { header: 'Názov behu', accessor: 'title' },
+                  { header: 'Prostredie', accessor: 'environment' },
+                  { header: 'Status', accessor: 'status' },
+                  { header: 'Vytvorený', accessor: (r: any) => new Date(r.createdAt).toLocaleString('sk-SK') },
+                  { header: 'Počet testov', accessor: (r: any) => r.executions?.length || 0 },
+                ],
+                runs
+              );
+            }}
+            variant="outline"
+            size="default"
+            className="border-white/20 hover:border-emerald-400 gap-1.5"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-400" /> Export CSV
+          </Button>
+
+          <Button onClick={() => setShowCreateModal(true)} variant="default" size="default">
+            <Plus className="w-4 h-4 mr-1" /> Spustiť Nový Run
+          </Button>
+        </div>
       </div>
 
       {/* Runs Grid */}
