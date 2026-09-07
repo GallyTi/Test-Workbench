@@ -2,6 +2,9 @@ import axios from 'axios';
 
 export const getApiBaseUrl = () => {
   if (typeof window !== 'undefined') {
+    if (window.location.protocol === 'https:') {
+      return `${window.location.origin}/api`;
+    }
     return `http://${window.location.hostname}:4000`;
   }
   return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
@@ -27,6 +30,9 @@ export const resolveAttachmentUrl = (att: any): string => {
       const parsed = new URL(att);
       const baseParsed = new URL(baseUrl);
       parsed.hostname = baseParsed.hostname;
+      if (baseParsed.protocol === 'https:') {
+        parsed.protocol = 'https:';
+      }
       return parsed.toString();
     } catch {
       return att;
@@ -41,7 +47,9 @@ export const resolveAttachmentUrl = (att: any): string => {
 };
 
 export const api = axios.create({
-  baseURL: typeof window !== 'undefined' ? `http://${window.location.hostname}:4000` : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'),
+  baseURL: typeof window !== 'undefined'
+    ? (window.location.protocol === 'https:' ? `${window.location.origin}/api` : `http://${window.location.hostname}:4000`)
+    : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'),
   headers: {
     'Content-Type': 'application/json',
   },
@@ -49,7 +57,7 @@ export const api = axios.create({
 
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
-    config.baseURL = `http://${window.location.hostname}:4000`;
+    config.baseURL = getApiBaseUrl();
     const token = localStorage.getItem('rits_access_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

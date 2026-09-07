@@ -6,8 +6,8 @@ services:
     ports:
       - "3005:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://82.38.65.67:4000}
-      - NEXT_PUBLIC_WS_URL=${NEXT_PUBLIC_WS_URL:-http://82.38.65.67:4000}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://nginx64999.hostkey.in/api}
+      - NEXT_PUBLIC_WS_URL=${NEXT_PUBLIC_WS_URL:-https://nginx64999.hostkey.in}
     depends_on:
       - api
     deploy:
@@ -41,14 +41,14 @@ services:
       - REDIS_PORT=6379
       - S3_ENDPOINT=minio
       - S3_PORT=9000
-      - S3_PUBLIC_ENDPOINT=${S3_PUBLIC_ENDPOINT:-http://82.38.65.67:9010}
+      - S3_PUBLIC_ENDPOINT=${S3_PUBLIC_ENDPOINT:-https://nginx64999.hostkey.in/attachments}
       - S3_USE_SSL=false
       - S3_ACCESS_KEY=${MINIO_ROOT_USER:-rits_minio_admin}
       - S3_SECRET_KEY=${MINIO_ROOT_PASSWORD:-rits_minio_secure_pass_9843}
       - S3_BUCKET_NAME=test-attachments
       - JWT_SECRET=${JWT_SECRET:-rits_prod_super_jwt_secret_key_8471927491}
       - JWT_EXPIRATION=7d
-      - FRONTEND_URL=${FRONTEND_URL:-http://82.38.65.67:3005}
+      - FRONTEND_URL=${FRONTEND_URL:-https://nginx64999.hostkey.in}
     depends_on:
       postgres:
         condition: service_healthy
