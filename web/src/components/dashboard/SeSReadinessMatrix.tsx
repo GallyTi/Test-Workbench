@@ -223,16 +223,16 @@ export function SeSReadinessMatrix({ testCases = [], runs = [] }: SeSReadinessMa
   return (
     <div className="space-y-4">
       {/* Country Filter & Info Bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-zinc-950/80 border border-white/10 shadow-lg">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-white/90 dark:bg-zinc-950/80 border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-lg">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400">
+          <div className="p-2 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
             <Filter className="w-4 h-4" />
           </div>
           <div>
-            <span className="text-xs font-bold text-white block">
+            <span className="text-xs font-bold text-slate-900 dark:text-white block">
               Filter Trhu (Market Scope)
             </span>
-            <span className="text-[10px] text-zinc-400 font-mono">
+            <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-mono">
               Lokálne daňové predpisy & fiškálne systémy (eKasa, EET, ANAF, Kasa Online)
             </span>
           </div>
@@ -247,7 +247,7 @@ export function SeSReadinessMatrix({ testCases = [], runs = [] }: SeSReadinessMa
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-mono font-medium transition-all ${
                 selectedCountry === c.code
                   ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
-                  : 'bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/10'
+                  : 'bg-slate-100 dark:bg-white/[0.04] text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-white/10'
               }`}
             >
               <span>{c.flag}</span>
@@ -258,17 +258,17 @@ export function SeSReadinessMatrix({ testCases = [], runs = [] }: SeSReadinessMa
       </div>
 
       {/* Steering Committee Release Rule Banner */}
-      <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-zinc-950 to-purple-500/10 border border-amber-500/30 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xl">
+      <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-amber-500/5 to-purple-500/15 dark:from-amber-500/10 dark:via-zinc-950 dark:to-purple-500/10 border border-amber-500/40 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-md dark:shadow-xl">
         <div className="flex items-start gap-3">
-          <ShieldAlert className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+          <ShieldAlert className="w-5 h-5 text-amber-500 dark:text-amber-400 shrink-0 mt-0.5" />
           <div className="space-y-0.5">
-            <h4 className="text-xs sm:text-sm font-bold text-amber-300 flex items-center gap-2">
+            <h4 className="text-xs sm:text-sm font-bold text-amber-800 dark:text-amber-300 flex items-center gap-2">
               Pravidlo Steering Committee pre Otvorenie SeS
               <Badge variant="purple" className="text-[9px] font-mono">
                 GO / NO-GO GATE
               </Badge>
             </h4>
-            <p className="text-xs text-zinc-300 leading-relaxed max-w-4xl">
+            <p className="text-xs text-slate-700 dark:text-zinc-300 leading-relaxed max-w-4xl">
               Definícia úspešného testovania: <strong>0 kritických chýb</strong> a <strong>100% Passed krokov</strong>.
               Žiadny test sám o sebe nie je showstopper, ale každá chyba v ňom nájdená ním môže byť. Iný stav ide na posúdenie Steering Committee.
             </p>
@@ -276,9 +276,9 @@ export function SeSReadinessMatrix({ testCases = [], runs = [] }: SeSReadinessMa
         </div>
 
         <div className="flex items-center gap-2 shrink-0 self-end md:self-auto">
-          <div className="px-3 py-1.5 rounded-xl bg-black/60 border border-white/10 text-right">
-            <span className="text-[9px] font-mono text-zinc-400 block uppercase">Aktívne Showstoppery</span>
-            <span className={`text-sm font-extrabold font-mono ${highwayMetrics.showstoppers > 0 ? 'text-rose-400 animate-pulse' : 'text-emerald-400'}`}>
+          <div className="px-3 py-1.5 rounded-xl bg-white/80 dark:bg-black/60 border border-slate-200 dark:border-white/10 text-right">
+            <span className="text-[9px] font-mono text-slate-500 dark:text-zinc-400 block uppercase">Aktívne Showstoppery</span>
+            <span className={`text-sm font-extrabold font-mono ${highwayMetrics.showstoppers > 0 ? 'text-rose-500 dark:text-rose-400 animate-pulse' : 'text-emerald-600 dark:text-emerald-400'}`}>
               {highwayMetrics.showstoppers} blokácií
             </span>
           </div>
@@ -300,7 +300,7 @@ export function SeSReadinessMatrix({ testCases = [], runs = [] }: SeSReadinessMa
                   ? 'bg-emerald-500/[0.08] border-emerald-500/40 hover:border-emerald-400 shadow-lg shadow-emerald-500/10'
                   : b.metrics.showstoppers > 0
                   ? 'bg-rose-500/[0.05] border-rose-500/40 hover:border-rose-400 shadow-lg shadow-rose-500/10'
-                  : 'bg-zinc-950/70 border-white/10 hover:border-white/20'
+                  : 'bg-white/90 dark:bg-zinc-950/70 border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 shadow-sm dark:shadow-none'
               } ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
             >
               {/* Badge Header */}
@@ -318,34 +318,34 @@ export function SeSReadinessMatrix({ testCases = [], runs = [] }: SeSReadinessMa
                       🛑 {b.metrics.showstoppers} SHOWSTOPPER{b.metrics.showstoppers > 1 ? 'Y' : ''}
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="text-[10px] font-mono text-zinc-400">
+                    <Badge variant="outline" className="text-[10px] font-mono text-slate-600 dark:text-zinc-400">
                       ⏳ {b.metrics.remainingSteps} do otvorenia
                     </Badge>
                   )}
                 </div>
 
-                <h3 className="text-sm font-bold text-white font-mono flex items-center gap-2">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white font-mono flex items-center gap-2">
                   &quot;{b.name}&quot;
                 </h3>
-                <p className="text-[11px] text-zinc-400 line-clamp-2 mt-1 leading-snug">
+                <p className="text-[11px] text-slate-600 dark:text-zinc-400 line-clamp-2 mt-1 leading-snug">
                   {b.desc}
                 </p>
-                <div className="text-[10px] text-zinc-500 font-mono mt-1">
-                  Owner: <span className="text-zinc-300 font-semibold">{b.owners}</span>
+                <div className="text-[10px] text-slate-500 dark:text-zinc-500 font-mono mt-1">
+                  Owner: <span className="text-slate-800 dark:text-zinc-300 font-semibold">{b.owners}</span>
                 </div>
               </div>
 
               {/* Progress & Remaining */}
-              <div className="mt-4 pt-3 border-t border-white/[0.08] space-y-2">
+              <div className="mt-4 pt-3 border-t border-slate-200 dark:border-white/[0.08] space-y-2">
                 <div className="flex items-center justify-between text-xs font-mono">
-                  <span className="text-zinc-400">Pripravenosť SeS:</span>
-                  <span className={`font-bold ${b.metrics.isUnlocked ? 'text-emerald-400' : 'text-zinc-200'}`}>
+                  <span className="text-slate-600 dark:text-zinc-400">Pripravenosť SeS:</span>
+                  <span className={`font-bold ${b.metrics.isUnlocked ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-zinc-200'}`}>
                     {b.metrics.percent}% ({b.metrics.passed}/{b.metrics.total})
                   </span>
                 </div>
 
                 {/* Progress bar */}
-                <div className="w-full h-2 rounded-full bg-white/[0.06] overflow-hidden">
+                <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-white/[0.06] overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-500 ${
                       b.metrics.isUnlocked
@@ -358,9 +358,9 @@ export function SeSReadinessMatrix({ testCases = [], runs = [] }: SeSReadinessMa
                   />
                 </div>
 
-                <div className="flex items-center justify-between text-[10px] font-mono text-zinc-500 pt-0.5">
+                <div className="flex items-center justify-between text-[10px] font-mono text-slate-500 dark:text-zinc-500 pt-0.5">
                   <span>Chýba do otvorenia:</span>
-                  <span className="text-zinc-300 font-semibold">
+                  <span className="text-slate-800 dark:text-zinc-300 font-semibold">
                     {b.metrics.remainingSteps === 0 ? '0 (Pripravené)' : `${b.metrics.remainingSteps} testov`}
                   </span>
                 </div>
@@ -371,15 +371,15 @@ export function SeSReadinessMatrix({ testCases = [], runs = [] }: SeSReadinessMa
       </div>
 
       {/* Stream Ownership & Escalation Table */}
-      <div className="p-4 rounded-2xl bg-zinc-950/70 border border-white/10 shadow-lg space-y-3">
+      <div className="p-4 rounded-2xl bg-white/90 dark:bg-zinc-950/70 border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-lg space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Users className="w-4 h-4 text-purple-400" />
-            <h4 className="text-xs sm:text-sm font-bold text-white">
+            <Users className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+            <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
               Vlastníci Streamov & Eskalačná Matica (Stream Ownership)
             </h4>
           </div>
-          <span className="text-[10px] font-mono text-zinc-400">
+          <span className="text-[10px] font-mono text-slate-500 dark:text-zinc-400">
             Priamy kontakt na POs pri Showstopperoch
           </span>
         </div>
@@ -388,20 +388,20 @@ export function SeSReadinessMatrix({ testCases = [], runs = [] }: SeSReadinessMa
           {STREAMS.map((s) => (
             <div
               key={s.code}
-              className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] flex flex-col justify-between space-y-2"
+              className="p-3 rounded-xl bg-slate-50/80 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.06] flex flex-col justify-between space-y-2"
             >
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <Badge variant="outline" className="text-[9px] font-mono">
                     {s.code}
                   </Badge>
-                  <span className="text-[10px] font-mono text-zinc-400">{s.badge}</span>
+                  <span className="text-[10px] font-mono text-slate-500 dark:text-zinc-400">{s.badge}</span>
                 </div>
-                <h5 className="text-xs font-semibold text-zinc-200">{s.name}</h5>
+                <h5 className="text-xs font-semibold text-slate-800 dark:text-zinc-200">{s.name}</h5>
               </div>
-              <div className="pt-2 border-t border-white/[0.04]">
-                <span className="text-[10px] text-zinc-500 block">Zodpovední / PO:</span>
-                <span className="text-xs font-bold text-blue-400 font-mono">
+              <div className="pt-2 border-t border-slate-200/60 dark:border-white/[0.04]">
+                <span className="text-[10px] text-slate-500 dark:text-zinc-500 block">Zodpovední / PO:</span>
+                <span className="text-xs font-bold text-blue-600 dark:text-blue-400 font-mono">
                   {s.owners.join(', ')}
                 </span>
               </div>
@@ -412,11 +412,11 @@ export function SeSReadinessMatrix({ testCases = [], runs = [] }: SeSReadinessMa
 
       {/* Drill-down Test Cases List (When a badge is clicked) */}
       {activeBadgeFilter !== 'ALL' && currentBadgeObj && (
-        <div className="p-4 rounded-2xl bg-zinc-950 border border-white/15 shadow-2xl space-y-3 animate-in fade-in duration-200">
-          <div className="flex items-center justify-between pb-2 border-b border-white/10">
+        <div className="p-4 rounded-2xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-white/15 shadow-xl space-y-3 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-white/10">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-bold text-white">
-                Detail testov pre odznak: <span className="font-mono text-blue-400">&quot;{currentBadgeObj.name}&quot;</span>
+              <span className="text-sm font-bold text-slate-900 dark:text-white">
+                Detail testov pre odznak: <span className="font-mono text-blue-600 dark:text-blue-400">&quot;{currentBadgeObj.name}&quot;</span>
               </span>
               <Badge variant="outline" className="font-mono text-xs">
                 {displayedDrilldownTests.length} testov
@@ -426,7 +426,7 @@ export function SeSReadinessMatrix({ testCases = [], runs = [] }: SeSReadinessMa
               size="sm"
               variant="ghost"
               onClick={() => setActiveBadgeFilter('ALL')}
-              className="h-7 text-xs text-zinc-400 hover:text-white"
+              className="h-7 text-xs text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white"
             >
               Zavrieť detail
             </Button>

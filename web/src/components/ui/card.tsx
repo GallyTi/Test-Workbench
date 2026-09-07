@@ -7,20 +7,20 @@ const Card = React.forwardRef<
 >(({ className, variant = 'glass', ...props }, ref) => {
   const variantStyles = {
     glass:
-      'backdrop-blur-xl bg-black/40 border border-white/[0.08] shadow-[0_8px_32px_0_rgba(0,0,0,0.5)]',
+      'backdrop-blur-xl bg-white/85 dark:bg-black/40 border border-slate-200/80 dark:border-white/[0.08] shadow-sm dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.5)]',
     solid:
-      'bg-zinc-950 border border-zinc-800 shadow-xl',
+      'bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 shadow-sm dark:shadow-xl',
     interactive:
-      'backdrop-blur-xl bg-black/40 border border-white/[0.08] hover:border-white/20 hover:bg-white/[0.04] transition-all duration-300 shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] hover:shadow-[0_12px_40px_0_rgba(59,130,246,0.15)] hover:-translate-y-0.5',
+      'backdrop-blur-xl bg-white/85 dark:bg-black/40 border border-slate-200/80 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/20 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-all duration-300 shadow-sm dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] hover:shadow-md hover:-translate-y-0.5',
     bento:
-      'backdrop-blur-2xl bg-gradient-to-b from-white/[0.05] to-white/[0.01] border border-white/[0.08] hover:border-white/[0.18] transition-all duration-300 shadow-2xl relative overflow-hidden group',
+      'backdrop-blur-2xl bg-white/90 dark:bg-gradient-to-b dark:from-white/[0.05] dark:to-white/[0.01] border border-slate-200/80 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/[0.18] transition-all duration-300 shadow-sm dark:shadow-2xl relative overflow-hidden group',
   };
 
   return (
     <div
       ref={ref}
       className={cn(
-        'rounded-2xl text-card-foreground',
+        'rounded-2xl text-card-foreground text-slate-900 dark:text-slate-100',
         variantStyles[variant],
         className
       )}
@@ -49,7 +49,7 @@ const CardTitle = React.forwardRef<
   <h3
     ref={ref}
     className={cn(
-      'text-lg font-semibold leading-none tracking-tight text-white',
+      'text-lg font-semibold leading-none tracking-tight text-slate-900 dark:text-white',
       className
     )}
     {...props}
@@ -63,7 +63,7 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={cn('text-xs text-zinc-400 leading-relaxed', className)}
+    className={cn('text-xs text-slate-600 dark:text-zinc-400 leading-relaxed', className)}
     {...props}
   />
 ));
