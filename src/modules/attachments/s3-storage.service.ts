@@ -83,15 +83,29 @@ export class S3StorageService implements OnModuleInit {
     return key;
   }
 
-  async getFileStream(key: string): Promise<{ stream: NodeJS.ReadableStream; mimeType?: string; size?: number } | null> {
+  async getFileStream(
+    key: string,
+    range?: { start: number; end?: number },
+  ): Promise<{ stream: NodeJS.ReadableStream; mimeType?: string; size?: number; totalSize?: number } | null> {
     // 1. Skontrolujeme lokálny disk
     const localFilePath = path.join(this.uploadsDir, key);
     if (fs.existsSync(localFilePath)) {
       try {
         const stat = fs.statSync(localFilePath);
+        const totalSize = stat.size;
+        if (range) {
+          const start = range.start;
+          const end = range.end !== undefined && range.end < totalSize ? range.end : totalSize - 1;
+          return {
+            stream: fs.createReadStream(localFilePath, { start, end }),
+            size: end - start + 1,
+            totalSize,
+          };
+        }
         return {
           stream: fs.createReadStream(localFilePath),
-          size: stat.size,
+          size: totalSize,
+          totalSize,
         };
       } catch (err: any) {
         this.logger.warn(`Chyba čítania lokálneho súboru ${localFilePath}: ${err.message}`);
@@ -100,12 +114,14 @@ export class S3StorageService implements OnModuleInit {
 
     // 2. Ak nie je lokálne, načítame z S3/MinIO
     try {
-      const res = await this.s3Client.send(
-        new GetObjectCommand({
-          Bucket: this.bucketName,
-          Key: key,
-        }),
-      );
+      const commandInput: any = {
+        Bucket: this.bucketName,
+        Key: key,
+      };
+      if (range) {
+        commandInput.Range = `bytes=${range.start}-${range.end !== undefined ? range.end : ''}`;
+      }
+      const res = await this.s3Client.send(new GetObjectCommand(commandInput));
 
       if (res.Body) {
         return {

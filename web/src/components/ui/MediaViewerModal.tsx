@@ -12,6 +12,8 @@ import {
   ZoomIn,
   ZoomOut,
   RotateCw,
+  Trash2,
+  Edit3,
 } from 'lucide-react';
 import { resolveAttachmentUrl } from '@/lib/api';
 
@@ -26,9 +28,17 @@ interface MediaViewerModalProps {
     createdAt?: string;
   } | null;
   onClose: () => void;
+  onDelete?: (id: string) => void;
+  onAnnotate?: (attachment: any) => void;
 }
 
-export function MediaViewerModal({ isOpen, attachment, onClose }: MediaViewerModalProps) {
+export function MediaViewerModal({
+  isOpen,
+  attachment,
+  onClose,
+  onDelete,
+  onAnnotate,
+}: MediaViewerModalProps) {
   const [imgError, setImgError] = useState(false);
   const [scale, setScale] = useState(1);
   const [rotation, setRotation] = useState(0);
@@ -232,6 +242,20 @@ export function MediaViewerModal({ isOpen, attachment, onClose }: MediaViewerMod
             </div>
           )}
 
+          {!isVideo && onAnnotate && (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onAnnotate(attachment);
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow-lg shadow-purple-600/30 transition-all"
+              title="Kresliť na obrázok (šípky, obdĺžniky, text)"
+            >
+              <Edit3 className="w-3.5 h-3.5" /> Anotovať
+            </button>
+          )}
+
           <a
             href={mediaUrl}
             download={fileName}
@@ -239,8 +263,24 @@ export function MediaViewerModal({ isOpen, attachment, onClose }: MediaViewerMod
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-lg shadow-blue-600/30 transition-all"
           >
-            <Download className="w-3.5 h-3.5" /> Stiahnuť originál
+            <Download className="w-3.5 h-3.5" /> Stiahnuť
           </a>
+
+          {attachment.id && onDelete && (
+            <button
+              type="button"
+              onClick={() => {
+                if (confirm(`Naozaj chcete zmazať súbor "${fileName}"?`)) {
+                  onDelete(attachment.id!);
+                  onClose();
+                }
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-600/80 hover:bg-rose-600 text-white text-xs font-semibold transition-colors"
+              title="Odstrániť túto prílohu"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Zmazať
+            </button>
+          )}
 
           <button
             type="button"
@@ -271,9 +311,11 @@ export function MediaViewerModal({ isOpen, attachment, onClose }: MediaViewerMod
             src={mediaUrl}
             controls
             autoPlay
+            playsInline
+            preload="metadata"
             className="max-h-[72vh] w-auto max-w-full rounded-xl shadow-2xl"
           >
-            Váš prehliadač nepodporuje prehrávanie tohto videa.
+            Váš prehliadač nepodporuje priame prehrávanie tohto videa. Súbor si môžete stiahnuť tlačidlom Stiahnuť.
           </video>
         ) : imgError ? (
           <div className="p-8 text-center space-y-3">

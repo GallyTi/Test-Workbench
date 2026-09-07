@@ -40,6 +40,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { CommentThread } from '@/components/ui/CommentThread';
 import { MediaViewerModal } from '@/components/ui/MediaViewerModal';
+import { ImageAnnotationModal } from '@/components/ui/ImageAnnotationModal';
 import { Film } from 'lucide-react';
 import { resolveAttachmentUrl } from '@/lib/api';
 
@@ -94,7 +95,9 @@ export default function TestCaseDetailPage({ params }: { params: Promise<{ id: s
 
   // Active step & toast feedback for Ctrl+V screenshot pasting
   const [activeStepId, setActiveStepId] = useState<string | null>(null);
+  const [annotatingAttachment, setAnnotatingAttachment] = useState<any | null>(null);
   const [toastNotification, setToastNotification] = useState<{ message: string; type?: 'success' | 'info' | 'error' } | null>(null);
+  const lastPasteRef = useRef<number>(0);
 
   const showToast = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
     setToastNotification({ message, type });
@@ -114,25 +117,33 @@ export default function TestCaseDetailPage({ params }: { params: Promise<{ id: s
       // Fetch comments & attachments for all steps
       if (res.steps) {
         res.steps.forEach((step: any) => {
+          loadStepComments(step.id);
           loadStepMedia(step.id);
         });
       }
-    } catch (err) {
-      console.error('Chyba načítania testu:', err);
+    } catch (err: any) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
+  const loadStepComments = async (stepId: string) => {
+    try {
+      const res: any = await api.get(`/comments/TEST_CASE_STEP/${stepId}`);
+      setStepComments((prev) => ({ ...prev, [stepId]: res || [] }));
+    } catch {
+      setStepComments((prev) => ({ ...prev, [stepId]: [] }));
+    }
+  };
+
   const loadStepMedia = async (stepId: string) => {
     try {
-      const [comms, atts]: [any, any] = await Promise.all([
-        api.get(`/comments/TEST_CASE_STEP/${stepId}`).catch(() => []),
-        api.get(`/attachments/TEST_CASE_STEP/${stepId}`).catch(() => []),
-      ]);
-      setStepComments((prev) => ({ ...prev, [stepId]: comms || [] }));
-      setStepAttachments((prev) => ({ ...prev, [stepId]: atts || [] }));
-    } catch {}
+      const res: any = await api.get(`/attachments/TEST_CASE_STEP/${stepId}`);
+      setStepAttachments((prev) => ({ ...prev, [stepId]: res || [] }));
+    } catch {
+      setStepAttachments((prev) => ({ ...prev, [stepId]: [] }));
+    }
   };
 
   useEffect(() => {
@@ -165,10 +176,8 @@ export default function TestCaseDetailPage({ params }: { params: Promise<{ id: s
   }, [testCaseId, activeProject]);
 
   const toggleStepAccordion = (stepId: string) => {
-    setExpandedSteps((prev) => ({
-      ...prev,
-      [stepId]: !prev[stepId],
-    }));
+    setActiveStepId(stepId);
+    setExpandedSteps((prev) => ({ ...prev, [stepId]: !prev[stepId] }));
   };
 
   const expandAllSteps = () => {
@@ -183,33 +192,54 @@ export default function TestCaseDetailPage({ params }: { params: Promise<{ id: s
     setExpandedSteps({});
   };
 
-  // Single robust Clipboard Ctrl+V Screenshot Paste handler
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    if (!confirm('Naozaj chcete zmazať túto prílohu?')) return;
+    try {
+      await api.delete(`/attachments/${attachmentId}`);
+      setStepAttachments((prev) => {
+        const next = { ...prev };
+        for (const stepId of Object.keys(next)) {
+          next[stepId] = next[stepId].filter((a: any) => a.id !== attachmentId);
+        }
+        return next;
+      });
+      if (selectedPhoto?.id === attachmentId) {
+        setSelectedPhoto(null);
+      }
+      showToast('Príloha bola úspešne zmazaná.', 'info');
+    } catch (err: any) {
+      console.error('Chyba pri mazaní:', err);
+      showToast('Chyba pri mazaní: ' + (err?.message || 'Chyba'), 'error');
+    }
+  };
+
+  // Single robust Clipboard Ctrl+V Screenshot Paste handler with debounce
   useEffect(() => {
     const handlePaste = async (e: ClipboardEvent) => {
-      // Don't hijack if user is typing inside the comment editor textarea
       const target = e.target as HTMLElement | null;
-      if (target?.closest?.('.comment-thread-editor') || target?.tagName === 'TEXTAREA') {
+      if (target?.closest?.('.comment-thread-editor') || target?.tagName === 'TEXTAREA' || target?.tagName === 'INPUT') {
         return;
       }
 
       const items = e.clipboardData?.items;
       if (!items || items.length === 0) return;
 
-      // Extract ONLY ONE image representation to prevent duplicate uploads
+      const now = Date.now();
+      if (now - lastPasteRef.current < 1200) return;
+
       let imageFile: File | null = null;
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.indexOf('image') !== -1) {
           const file = items[i].getAsFile();
           if (file) {
             imageFile = file;
-            break; // Stop at first valid image representation!
+            break; // Stop at first valid image representation
           }
         }
       }
 
       if (!imageFile) return;
 
-      // Target step is either explicitly active/clicked step, or first expanded step, or first step
       const targetStep =
         activeStepId ||
         Object.keys(expandedSteps).find((k) => expandedSteps[k]) ||
@@ -220,6 +250,7 @@ export default function TestCaseDetailPage({ params }: { params: Promise<{ id: s
       const targetStepObj = testCase?.steps?.find((s: any) => s.id === targetStep);
       const stepNumLabel = targetStepObj ? `#${targetStepObj.stepNumber}` : '';
 
+      lastPasteRef.current = now;
       e.preventDefault();
       e.stopPropagation();
 
@@ -462,6 +493,26 @@ export default function TestCaseDetailPage({ params }: { params: Promise<{ id: s
         isOpen={!!selectedPhoto}
         attachment={selectedPhoto}
         onClose={() => setSelectedPhoto(null)}
+        onDelete={handleDeleteAttachment}
+        onAnnotate={(att) => {
+          setSelectedPhoto(null);
+          setAnnotatingAttachment(att);
+        }}
+      />
+
+      {/* In-App Screenshot Annotation / Markup Modal */}
+      <ImageAnnotationModal
+        isOpen={!!annotatingAttachment}
+        attachment={annotatingAttachment}
+        targetType="TEST_CASE_STEP"
+        targetId={activeStepId || testCase?.steps?.[0]?.id}
+        onClose={() => setAnnotatingAttachment(null)}
+        onSaved={(newAtt) => {
+          if (activeStepId) {
+            loadStepMedia(activeStepId);
+            showToast('🎨 Anotovaný screenshot bol úspešne uložený ku kroku!', 'success');
+          }
+        }}
       />
 
       {/* Top Header Card with High-Contrast Accents */}

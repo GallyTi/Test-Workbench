@@ -33,12 +33,15 @@ import {
   SlidersHorizontal,
   RotateCcw,
   ExternalLink,
+  Fuel,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { SeSReadinessMatrix } from '@/components/dashboard/SeSReadinessMatrix';
 
 interface DashboardWidgetsConfig {
+  sesReadiness: boolean;       // ⛽ SeS Readiness & Showstopper Matica ("wet SeS", "dry SeS", "service SeS", "highway SeS")
   quickAction: boolean;        // ⚡ Rýchla akcia: Pridať testovací krok & vstupné dáta
   keyMetrics: boolean;         // 📊 4 Hlavné KPI karty
   detailedProgress: boolean;   // 📈 Detailný rozpad stavov testov
@@ -49,6 +52,7 @@ interface DashboardWidgetsConfig {
 }
 
 const DEFAULT_WIDGETS_CONFIG: DashboardWidgetsConfig = {
+  sesReadiness: true,
   quickAction: true,
   keyMetrics: true,
   detailedProgress: true,
@@ -325,6 +329,19 @@ export default function DashboardPage() {
 
           <button
             type="button"
+            onClick={() => updateWidgetConfig('sesReadiness', !widgetsConfig.sesReadiness)}
+            className={`px-2.5 py-1 rounded-xl text-xs font-semibold flex items-center gap-1 transition-all ${
+              widgetsConfig.sesReadiness
+                ? 'bg-blue-600/20 text-blue-300 border border-blue-500/40 shadow-sm'
+                : 'bg-white/[0.03] text-zinc-500 border border-white/[0.06] hover:text-zinc-300'
+            }`}
+          >
+            <span>⛽</span>
+            SeS Pripravenosť
+          </button>
+
+          <button
+            type="button"
             onClick={() => updateWidgetConfig('quickAction', !widgetsConfig.quickAction)}
             className={`px-2.5 py-1 rounded-xl text-xs font-semibold flex items-center gap-1 transition-all ${
               widgetsConfig.quickAction
@@ -412,6 +429,11 @@ export default function DashboardPage() {
           <SlidersHorizontal className="w-3.5 h-3.5 mr-1.5 text-blue-400" /> Prispôsobiť Prehľad
         </Button>
       </div>
+
+      {/* 1. SeS Readiness & Showstopper Matica ("wet SeS", "dry SeS", "service SeS", "highway SeS") */}
+      {widgetsConfig.sesReadiness && (
+        <SeSReadinessMatrix testCases={testCases} runs={runs} />
+      )}
 
       {/* 2. Quick Action Widget: Pridať Testovací Krok & Vstupné Dáta */}
       {widgetsConfig.quickAction && (
@@ -971,6 +993,32 @@ export default function DashboardPage() {
             </p>
 
             <div className="space-y-3">
+              {/* SeS Readiness & Showstopper Matica Toggle */}
+              <div
+                onClick={() => updateWidgetConfig('sesReadiness', !widgetsConfig.sesReadiness)}
+                className="p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.08] flex items-center justify-between cursor-pointer transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400">
+                    <Fuel className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-semibold text-white block">
+                      SeS Pripravenosť & Showstoppery (wet, dry, service, highway)
+                    </span>
+                    <span className="text-[11px] text-zinc-400">
+                      Odznaky čerpacích staníc, kritické blokácie pre Steering Committee a trhy (SK, CZ, RO, PL)
+                    </span>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={widgetsConfig.sesReadiness}
+                  readOnly
+                  className="w-4 h-4 rounded text-blue-600 focus:ring-0 cursor-pointer"
+                />
+              </div>
+
               {/* Quick Action Toggle */}
               <div
                 onClick={() => updateWidgetConfig('quickAction', !widgetsConfig.quickAction)}

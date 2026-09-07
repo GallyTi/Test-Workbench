@@ -39,3 +39,7 @@ Desktop.ini
 # Testing & Coverage
 coverage/
 .nyc_output/
+
+# Graphify
+graphify-out/
+

@@ -21,6 +21,10 @@ import {
   Layers,
   ChevronRight,
   User,
+  Trash2,
+  Edit3,
+  Sparkles,
+  ShieldAlert,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -29,6 +33,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { CommentThread } from '@/components/ui/CommentThread';
 import { MediaViewerModal } from '@/components/ui/MediaViewerModal';
+import { ImageAnnotationModal } from '@/components/ui/ImageAnnotationModal';
 import { resolveAttachmentUrl } from '@/lib/api';
 
 export default function TestExecutionPage({ params }: { params: Promise<{ id: string }> }) {
@@ -37,6 +42,7 @@ export default function TestExecutionPage({ params }: { params: Promise<{ id: st
   const [run, setRun] = useState<any>(null);
   const [selectedStep, setSelectedStep] = useState<any>(null);
   const [selectedMedia, setSelectedMedia] = useState<any>(null);
+  const [annotatingAttachment, setAnnotatingAttachment] = useState<any>(null);
   const [activeLocks, setActiveLocks] = useState<Record<string, { userId: string; userName: string }>>({});
   const [comments, setComments] = useState<any[]>([]);
   const [attachments, setAttachments] = useState<any[]>([]);
@@ -48,6 +54,7 @@ export default function TestExecutionPage({ params }: { params: Promise<{ id: st
   const [bugSeverity, setBugSeverity] = useState('MAJOR');
   const [loading, setLoading] = useState(false);
   const [toastNotification, setToastNotification] = useState<{ message: string; type?: 'success' | 'info' | 'error' } | null>(null);
+  const lastPasteTimeRef = useRef<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const showToast = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
@@ -100,11 +107,11 @@ export default function TestExecutionPage({ params }: { params: Promise<{ id: st
     };
   }, [testRunId]);
 
-  // Ctrl+V Screenshot Paste Handler
+  // Ctrl+V Screenshot Paste Handler (with strict debounce and focus guard)
   useEffect(() => {
     const handlePaste = async (e: ClipboardEvent) => {
       const target = e.target as HTMLElement | null;
-      if (target?.closest?.('.comment-thread-editor') || target?.tagName === 'TEXTAREA') {
+      if (target?.closest?.('.comment-thread-editor') || target?.tagName === 'TEXTAREA' || target?.tagName === 'INPUT') {
         return;
       }
 
@@ -112,18 +119,24 @@ export default function TestExecutionPage({ params }: { params: Promise<{ id: st
       const items = e.clipboardData?.items;
       if (!items || items.length === 0) return;
 
+      const now = Date.now();
+      if (now - lastPasteTimeRef.current < 1200) {
+        return; // Debounce guard against double triggers
+      }
+
       let imageFile: File | null = null;
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.indexOf('image') !== -1) {
           const file = items[i].getAsFile();
           if (file) {
             imageFile = file;
-            break; // Stop at first valid image to prevent duplicate paste!
+            break; // Stop at first valid image
           }
         }
       }
 
       if (imageFile) {
+        lastPasteTimeRef.current = now;
         e.preventDefault();
         e.stopPropagation();
         const formData = new FormData();
@@ -144,6 +157,21 @@ export default function TestExecutionPage({ params }: { params: Promise<{ id: st
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
   }, [selectedStep, user]);
+
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    if (!confirm('Naozaj chcete zmazať túto prílohu?')) return;
+    try {
+      await api.delete(`/attachments/${attachmentId}`);
+      setAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
+      if (selectedMedia?.id === attachmentId) {
+        setSelectedMedia(null);
+      }
+      showToast('Príloha bola úspešne zmazaná.', 'info');
+    } catch (err: any) {
+      console.error('Chyba pri mazaní prílohy:', err);
+      showToast('Chyba pri mazaní prílohy: ' + (err?.message || 'Chyba'), 'error');
+    }
+  };
 
   const selectStep = (step: any, testCase: any) => {
     setSelectedStep({ ...step, testCase });
@@ -286,6 +314,15 @@ export default function TestExecutionPage({ params }: { params: Promise<{ id: st
 
   const extra = selectedStep ? parseStepData(selectedStep.testCaseStep?.testData) : null;
 
+  // Steering Committee & Showstopper calculation
+  const allSteps = run?.executions?.flatMap((e: any) => e.stepExecs || []) || [];
+  const totalSteps = allSteps.length;
+  const passedSteps = allSteps.filter((s: any) => s.status === 'PASSED').length;
+  const blockedSteps = allSteps.filter((s: any) => s.status === 'BLOCKED');
+  const failedSteps = allSteps.filter((s: any) => s.status === 'FAILED');
+  const showstoppersCount = blockedSteps.length + failedSteps.length;
+  const isFullyPassed = totalSteps > 0 && passedSteps === totalSteps;
+
   return (
     <div className="space-y-4 pb-12 animate-in fade-in duration-500">
       {/* Toast Feedback Notification */}
@@ -324,23 +361,66 @@ export default function TestExecutionPage({ params }: { params: Promise<{ id: st
             </p>
           </div>
 
-          <div className="flex items-center gap-4 text-right">
+          <div className="flex items-center gap-3 text-right">
             <div className="px-3 py-2 bg-white/[0.02] border border-white/[0.05] rounded-xl">
               <span className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider block">
-                Splnené
+                Stav krokov
               </span>
               <span className="text-xs font-semibold text-white font-mono">
-                {run.executions?.reduce(
-                  (acc: number, e: any) =>
-                    acc + e.stepExecs.filter((s: any) => s.status === 'PASSED').length,
-                  0
-                )}{' '}
-                / {run.executions?.reduce((acc: number, e: any) => acc + e.stepExecs.length, 0)} krokov
+                {passedSteps} / {totalSteps} passed
               </span>
             </div>
+
+            {showstoppersCount > 0 && (
+              <div className="px-3 py-2 bg-rose-500/10 border border-rose-500/30 rounded-xl">
+                <span className="text-[10px] text-rose-400 font-medium uppercase tracking-wider block">
+                  Showstoppery
+                </span>
+                <span className="text-xs font-bold text-rose-400 font-mono">
+                  {showstoppersCount} chýb
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </Card>
+
+      {/* Steering Committee Release Gate Banner */}
+      {isFullyPassed ? (
+        <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between shadow-lg">
+          <div className="flex items-center gap-2.5">
+            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+            <div>
+              <h3 className="text-xs font-bold text-emerald-400">
+                VŠETKY KROKY PREŠLI (100% PASSED)
+              </h3>
+              <p className="text-[11px] text-emerald-300/80">
+                0 kritických chýb. Splnená definícia úspešného testovania pre posúdenie Steering Committee na povolenie otvorenia stanice (SeS).
+              </p>
+            </div>
+          </div>
+          <Badge variant="success" className="font-mono text-xs shrink-0">
+            READY TO OPEN SES ⛽
+          </Badge>
+        </div>
+      ) : showstoppersCount > 0 ? (
+        <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+          <div className="flex items-center gap-2.5">
+            <ShieldAlert className="w-5 h-5 text-rose-400 shrink-0" />
+            <div>
+              <h3 className="text-xs font-bold text-rose-400 flex items-center gap-2">
+                TEST ZASTAVENÝ: {showstoppersCount} SHOWSTOPPER{showstoppersCount > 1 ? 'OV' : ''} DETEKOVANÝCH
+              </h3>
+              <p className="text-[11px] text-rose-300/80">
+                Zistené zlyhané ({failedSteps.length}) alebo blokované ({blockedSteps.length}) kroky. Pravidlo MOL/Slovnaft: Každý nájdený problém je potenciálny showstopper vyžadujúci schválenie Steering Committee.
+              </p>
+            </div>
+          </div>
+          <Badge variant="destructive" className="font-mono text-xs self-start sm:self-auto shrink-0 animate-pulse">
+            ESKALÁCIA: STEERING COMMITTEE 🛑
+          </Badge>
+        </div>
+      ) : null}
 
       {/* Main Split Workbench: Left Navigation (4 Cols), Right Step Execution (8 Cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -601,9 +681,35 @@ export default function TestExecutionPage({ params }: { params: Promise<{ id: st
 
               {/* Actual Result Input & Status Buttons */}
               <div className="mt-5 space-y-2.5">
-                <label className="block text-xs font-medium text-zinc-300">
-                  Reálny Výsledok / Poznámka
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-medium text-zinc-300">
+                    Reálny Výsledok / Poznámka
+                  </label>
+                  <span className="text-[10px] font-mono text-zinc-500">
+                    Rýchle šablóny (1-klik):
+                  </span>
+                </div>
+
+                {/* Quick Response Templates */}
+                <div className="flex flex-wrap gap-1.5 pb-1">
+                  {[
+                    { label: '🛒 POS Bloček OK', text: 'Úspešný predaj na pokladni, fiškálny doklad vytlačený v poriadku.' },
+                    { label: '⛽ WET Stojan Výdaj', text: 'Výdaj paliva na stojane úspešný, DOMS 5000 transakcia spárovaná.' },
+                    { label: '📦 SAP MIGO Príjem', text: 'Materiálový doklad vygenerovaný v SAP S/4HANA (pohyb 101/501).' },
+                    { label: '⚠️ Timeout Komunikácie', text: 'CHYBA SPOJENIA: Zariadenie neodpovedá, timeout komunikácie.' },
+                    { label: '🚫 SHOWSTOPPER', text: 'SHOWSTOPPER: Kritická chyba blokuje spustenie prevádzky čerpacej stanice (SeS).' }
+                  ].map((tpl) => (
+                    <button
+                      key={tpl.label}
+                      type="button"
+                      onClick={() => setActualResultInput(tpl.text)}
+                      className="px-2 py-0.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.1] border border-white/[0.08] text-[10px] font-mono text-zinc-300 hover:text-white transition-colors"
+                    >
+                      {tpl.label}
+                    </button>
+                  ))}
+                </div>
+
                 <Textarea
                   rows={2}
                   value={actualResultInput}
@@ -685,6 +791,34 @@ export default function TestExecutionPage({ params }: { params: Promise<{ id: st
                         onClick={() => setSelectedMedia(att)}
                         className="group relative p-2 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 border border-white/10 hover:border-blue-500/50 cursor-pointer transition-all shadow-md overflow-hidden flex flex-col items-center text-center"
                       >
+                        {/* Action buttons on card hover */}
+                        <div className="absolute top-1 right-1 flex items-center gap-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {isImg && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setAnnotatingAttachment(att);
+                              }}
+                              title="Anotovať screenshot (kresliť šípky, text)"
+                              className="p-1 rounded-md bg-purple-600 hover:bg-purple-500 text-white shadow"
+                            >
+                              <Edit3 className="w-3 h-3" />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteAttachment(att.id);
+                            }}
+                            title="Odstrániť prílohu"
+                            className="p-1 rounded-md bg-black/80 hover:bg-rose-600 text-zinc-300 hover:text-white shadow"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+
                         <div className="w-full h-20 bg-black/40 rounded-lg overflow-hidden flex items-center justify-center mb-1.5 relative">
                           {isImg ? (
                             <img
@@ -801,6 +935,26 @@ export default function TestExecutionPage({ params }: { params: Promise<{ id: st
         isOpen={!!selectedMedia}
         attachment={selectedMedia}
         onClose={() => setSelectedMedia(null)}
+        onDelete={handleDeleteAttachment}
+        onAnnotate={(att) => {
+          setSelectedMedia(null);
+          setAnnotatingAttachment(att);
+        }}
+      />
+
+      {/* In-App Screenshot Annotation / Markup Modal */}
+      <ImageAnnotationModal
+        isOpen={!!annotatingAttachment}
+        attachment={annotatingAttachment}
+        targetType="STEP_EXECUTION"
+        targetId={selectedStep?.id}
+        onClose={() => setAnnotatingAttachment(null)}
+        onSaved={(newAtt) => {
+          if (selectedStep) {
+            loadStepDetails(selectedStep.id);
+            showToast('🎨 Anotovaný screenshot bol uložený a priložený ku kroku!', 'success');
+          }
+        }}
       />
     </div>
   );

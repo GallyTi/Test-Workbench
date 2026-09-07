@@ -291,69 +291,79 @@ html.light {
 }
 
 /* ==========================================================================
-   DYNAMIC & ANIMATED EMOJIS (Micro-interactions)
+   PERFORMANCE-OPTIMIZED EMOJIS (Smooth 60fps Micro-interactions)
+   Static at rest to prevent CPU/GPU throttling and layout reflow.
+   Animates smoothly on hover or interaction.
    ========================================================================== */
 
 @keyframes emoji-heartbeat {
-  0%, 100% { transform: scale(1); }
-  25% { transform: scale(1.28) rotate(-3deg); }
-  40% { transform: scale(1.08) rotate(3deg); }
-  60% { transform: scale(1.22); }
+  0%, 100% { transform: scale(1) translateZ(0); }
+  30% { transform: scale(1.22) rotate(-3deg) translateZ(0); }
+  60% { transform: scale(1.12) rotate(3deg) translateZ(0); }
 }
 
 @keyframes emoji-flame {
-  0%, 100% { transform: scale(1) translateY(0) rotate(0deg); filter: drop-shadow(0 0 2px rgba(249, 115, 22, 0.4)); }
-  25% { transform: scale(1.15) translateY(-2px) rotate(-4deg); filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.8)); }
-  50% { transform: scale(1.05) translateY(-1px) rotate(3deg); filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.6)); }
-  75% { transform: scale(1.18) translateY(-3px) rotate(-2deg); filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.9)); }
+  0%, 100% { transform: scale(1) translateY(0) translateZ(0); }
+  50% { transform: scale(1.18) translateY(-2px) rotate(-3deg) translateZ(0); }
 }
 
 @keyframes emoji-rocket {
-  0%, 100% { transform: translate(0, 0) rotate(0deg); }
-  20% { transform: translate(-2px, -3px) rotate(-5deg); }
-  40% { transform: translate(2px, -6px) rotate(5deg); }
-  60% { transform: translate(-1px, -8px) rotate(-3deg); }
-  80% { transform: translate(1px, -4px) rotate(2deg); }
+  0%, 100% { transform: translate(0, 0) translateZ(0); }
+  50% { transform: translate(2px, -4px) rotate(6deg) translateZ(0); }
 }
 
 @keyframes emoji-party {
-  0%, 100% { transform: scale(1) rotate(0deg); }
-  25% { transform: scale(1.22) rotate(-12deg); }
-  50% { transform: scale(1.1) rotate(12deg); }
-  75% { transform: scale(1.26) rotate(-6deg); }
+  0%, 100% { transform: scale(1) rotate(0deg) translateZ(0); }
+  50% { transform: scale(1.18) rotate(-10deg) translateZ(0); }
 }
 
 @keyframes emoji-bounce-fun {
-  0%, 100% { transform: translateY(0); }
-  30% { transform: translateY(-5px) scaleY(1.12) scaleX(0.95); }
-  50% { transform: translateY(0) scaleY(0.92) scaleX(1.08); }
-  70% { transform: translateY(-2px); }
+  0%, 100% { transform: translateY(0) translateZ(0); }
+  50% { transform: translateY(-4px) scale(1.1) translateZ(0); }
 }
 
 @keyframes emoji-wiggle {
-  0%, 100% { transform: rotate(0deg); }
-  25% { transform: rotate(-12deg) scale(1.12); }
-  50% { transform: rotate(12deg) scale(1.12); }
-  75% { transform: rotate(-6deg); }
+  0%, 100% { transform: rotate(0deg) translateZ(0); }
+  25% { transform: rotate(-10deg) scale(1.1) translateZ(0); }
+  75% { transform: rotate(10deg) scale(1.1) translateZ(0); }
 }
 
 @keyframes emoji-sparkle {
-  0%, 100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
-  50% { transform: scale(1.25) rotate(18deg); filter: brightness(1.4) drop-shadow(0 0 6px rgba(250, 204, 21, 0.8)); }
+  0%, 100% { transform: scale(1) rotate(0deg) translateZ(0); }
+  50% { transform: scale(1.2) rotate(15deg) translateZ(0); }
 }
 
 @keyframes emoji-zap {
-  0%, 100% { transform: scale(1); filter: brightness(1); }
-  20% { transform: scale(1.25) rotate(-6deg); filter: brightness(1.6) drop-shadow(0 0 8px rgba(234, 179, 8, 0.9)); }
-  40% { transform: scale(0.95) rotate(6deg); }
-  60% { transform: scale(1.18) rotate(-2deg); filter: brightness(1.4); }
+  0%, 100% { transform: scale(1) translateZ(0); }
+  50% { transform: scale(1.22) rotate(-5deg) translateZ(0); }
 }
 
-.anim-emoji-heart { display: inline-block; animation: emoji-heartbeat 1.3s infinite ease-in-out; }
-.anim-emoji-flame { display: inline-block; animation: emoji-flame 1.4s infinite ease-in-out; }
-.anim-emoji-rocket { display: inline-block; animation: emoji-rocket 1.6s infinite ease-in-out; }
-.anim-emoji-party { display: inline-block; animation: emoji-party 1.5s infinite ease-in-out; }
-.anim-emoji-bounce { display: inline-block; animation: emoji-bounce-fun 1.2s infinite ease-in-out; }
-.anim-emoji-wiggle { display: inline-block; animation: emoji-wiggle 1.2s infinite ease-in-out; }
-.anim-emoji-sparkle { display: inline-block; animation: emoji-sparkle 1.8s infinite ease-in-out; }
-.anim-emoji-zap { display: inline-block; animation: emoji-zap 1.1s infinite ease-in-out; }
+/* Performant: only animate on hover or explicit .anim-active class */
+.anim-emoji-heart,
+.anim-emoji-flame,
+.anim-emoji-rocket,
+.anim-emoji-party,
+.anim-emoji-bounce,
+.anim-emoji-wiggle,
+.anim-emoji-sparkle,
+.anim-emoji-zap {
+  display: inline-block;
+  transform: translateZ(0);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.anim-emoji-heart:hover, .group:hover .anim-emoji-heart { animation: emoji-heartbeat 0.6s ease-in-out; }
+.anim-emoji-flame:hover, .group:hover .anim-emoji-flame { animation: emoji-flame 0.6s ease-in-out; }
+.anim-emoji-rocket:hover, .group:hover .anim-emoji-rocket { animation: emoji-rocket 0.6s ease-in-out; }
+.anim-emoji-party:hover, .group:hover .anim-emoji-party { animation: emoji-party 0.6s ease-in-out; }
+.anim-emoji-bounce:hover, .group:hover .anim-emoji-bounce { animation: emoji-bounce-fun 0.6s ease-in-out; }
+.anim-emoji-wiggle:hover, .group:hover .anim-emoji-wiggle { animation: emoji-wiggle 0.6s ease-in-out; }
+.anim-emoji-sparkle:hover, .group:hover .anim-emoji-sparkle { animation: emoji-sparkle 0.6s ease-in-out; }
+.anim-emoji-zap:hover, .group:hover .anim-emoji-zap { animation: emoji-zap 0.6s ease-in-out; }
+
+/* Global text containment to prevent overflowing */
+p, span, div, h1, h2, h3, h4, td {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}

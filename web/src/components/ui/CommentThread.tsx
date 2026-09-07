@@ -22,7 +22,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { FullEmojiPicker, ANIMATED_EMOJI_CLASSES } from './FullEmojiPicker';
 import { GifPickerModal } from './GifPickerModal';
-import { PhotoViewerModal } from './PhotoViewerModal';
+import { MediaViewerModal } from './MediaViewerModal';
 
 interface Reaction {
   id: string;
@@ -247,9 +247,18 @@ export function CommentThread({
     setUploadingPhoto(false);
   };
 
+  const lastPasteRef = useRef<number>(0);
+
   const handleTextareaPaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const items = e.clipboardData?.items;
     if (!items || items.length === 0) return;
+
+    const now = Date.now();
+    if (now - lastPasteRef.current < 1200) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
 
     let imageFile: File | null = null;
     for (let i = 0; i < items.length; i++) {
@@ -257,12 +266,13 @@ export function CommentThread({
         const file = items[i].getAsFile();
         if (file) {
           imageFile = file;
-          break; // Stop at first valid image to prevent duplicate paste!
+          break; // Stop at first valid image
         }
       }
     }
 
     if (imageFile) {
+      lastPasteRef.current = now;
       e.preventDefault();
       e.stopPropagation();
       await uploadPhotoFiles([imageFile]);
@@ -401,11 +411,19 @@ export function CommentThread({
 
   return (
     <div className="space-y-3 pt-1">
-      {/* Photo Lightbox Modal */}
-      <PhotoViewerModal
+      {/* Media Lightbox Modal */}
+      <MediaViewerModal
         isOpen={!!selectedLightboxPhoto}
         attachment={selectedLightboxPhoto}
         onClose={() => setSelectedLightboxPhoto(null)}
+        onDelete={async (id) => {
+          try {
+            await api.delete(`/attachments/${id}`);
+            if (onRefresh) onRefresh();
+          } catch (e) {
+            console.error(e);
+          }
+        }}
       />
 
       {/* GIF Picker Modal */}

@@ -82,20 +82,40 @@ export class AttachmentsService {
     }));
   }
 
-  async getAttachmentFile(id: string) {
+  async getAttachmentFile(id: string, range?: { start: number; end?: number }) {
     const attachment = await this.prisma.attachment.findUnique({
       where: { id },
     });
     if (!attachment) return null;
 
-    const fileData = await this.s3Service.getFileStream(attachment.storageKey);
+    const fileData = await this.s3Service.getFileStream(attachment.storageKey, range);
     if (!fileData) return null;
 
     return {
       stream: fileData.stream,
       mimeType: attachment.mimeType || fileData.mimeType || 'application/octet-stream',
-      size: Number(attachment.fileSizeBytes) || fileData.size,
+      size: fileData.size || Number(attachment.fileSizeBytes),
+      totalSize: fileData.totalSize || Number(attachment.fileSizeBytes),
       fileName: attachment.fileName,
     };
+  }
+
+  async deleteAttachment(id: string, userId?: string) {
+    const attachment = await this.prisma.attachment.findUnique({
+      where: { id },
+    });
+    if (!attachment) {
+      throw new NotFoundException('Príloha nebola nájdená.');
+    }
+
+    // 1. Zmazať súbor z disku a S3
+    await this.s3Service.deleteFile(attachment.storageKey);
+
+    // 2. Zmazať záznam z databázy
+    await this.prisma.attachment.delete({
+      where: { id },
+    });
+
+    return { success: true, id, message: 'Príloha bola úspešne vymazaná.' };
   }
 }
